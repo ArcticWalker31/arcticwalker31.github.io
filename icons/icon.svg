@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sprout icon. icons/*.png are rendered from this same geometry (see README). -->
+  <rect width="512" height="512" rx="112" fill="#60935D"/>
+  <rect x="176" y="392" width="160" height="28" rx="14" fill="#493B2A"/>
+  <path d="M256 400 C256 340 256 300 256 250" stroke="#FEFFEA" stroke-width="28" stroke-linecap="round" fill="none"/>
+  <path d="M256 280 C200 280 140 240 130 175 C195 170 250 210 256 280 Z" fill="#FEFFEA"/>
+  <path d="M256 250 C258 180 318 125 390 118 C394 195 330 248 256 250 Z" fill="#FEFFEA"/>
+</svg>

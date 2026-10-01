@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover lets us draw under the notch; CSS pads with safe-area insets -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Habits</title>
+  <meta name="description" content="Personal habit logger">
+
+  <!-- Home-screen / full-screen app behaviour -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Habits">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FEFFEA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#2B231A" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <!-- ===================== Logger view ===================== -->
+  <main id="logger-view" class="view">
+    <header class="topbar">
+      <button class="sync-pill" id="sync-pill" type="button" aria-live="polite" title="Sync now">
+        <span class="sync-dot"></span><span class="sync-text">…</span>
+      </button>
+      <button class="icon-btn" id="open-settings" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.4 7.4 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.3 0 .5-.2.5-.4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+      </button>
+    </header>
+
+    <nav class="date-nav" aria-label="Choose day">
+      <button class="icon-btn big" id="prev-day" type="button" aria-label="Previous day">‹</button>
+      <div class="date-label">
+        <div class="date-main" id="date-main">Today</div>
+        <div class="date-sub" id="date-sub"></div>
+      </div>
+      <button class="icon-btn big" id="next-day" type="button" aria-label="Next day">›</button>
+    </nav>
+    <div class="today-row">
+      <button class="today-btn" id="today-btn" type="button" hidden>Back to today</button>
+    </div>
+
+    <section class="progress" id="progress" aria-live="polite">
+      <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+        <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"></circle>
+      </svg>
+      <div class="progress-text">
+        <div class="progress-count" id="progress-count">0 of 0</div>
+        <div class="progress-label" id="progress-label">done</div>
+      </div>
+    </section>
+
+    <section class="cards" id="cards"></section>
+    <p class="hint">Tip: long-press a check habit to mark it “not done”.</p>
+  </main>
+
+  <!-- ===================== Settings view ===================== -->
+  <main id="settings-view" class="view" hidden>
+    <header class="topbar">
+      <button class="back-btn" id="close-settings" type="button">‹ Done</button>
+      <h1 class="settings-title">Settings</h1>
+      <span class="topbar-spacer"></span>
+    </header>
+
+    <p class="intro" id="setup-intro" hidden>
+      Welcome! To sync between your phone and laptop, paste a GitHub token below,
+      then create a new Gist (first device) or paste an existing Gist ID (second device).
+      See the README for how to make the token.
+    </p>
+
+    <section class="panel">
+      <h2>GitHub connection</h2>
+      <label class="field">
+        <span>Personal access token (Gist read/write)</span>
+        <div class="row">
+          <input id="token-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…">
+          <button class="btn" id="token-toggle" type="button">Show</button>
+        </div>
+      </label>
+      <button class="btn primary" id="token-save" type="button">Save token</button>
+
+      <label class="field">
+        <span>Gist ID</span>
+        <div class="row">
+          <input id="gist-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="paste ID or Gist URL">
+          <button class="btn" id="gist-copy" type="button">Copy</button>
+        </div>
+      </label>
+      <div class="row wrap">
+        <button class="btn primary" id="gist-connect" type="button">Connect to this Gist</button>
+        <button class="btn" id="gist-create" type="button">Create new Gist</button>
+      </div>
+      <p class="msg" id="conn-msg" role="status"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Day starts at</h2>
+      <p class="note">Logging before this hour still counts toward the previous day.</p>
+      <select id="day-start"></select>
+    </section>
+
+    <section class="panel">
+      <h2>Habits</h2>
+      <ul class="habit-list" id="habit-list"></ul>
+
+      <h3>Add a habit</h3>
+      <form id="add-habit" class="add-habit">
+        <input name="name" type="text" placeholder="Name" required maxlength="40">
+        <select name="type">
+          <option value="check">Check (done / not)</option>
+          <option value="count">Count (reach a target)</option>
+          <option value="minutes">Minutes (stay under a max)</option>
+        </select>
+        <input name="goal" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Target / max" hidden>
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+    </section>
+  </main>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+</body>
+</html>
