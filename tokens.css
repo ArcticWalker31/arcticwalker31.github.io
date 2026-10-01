@@ -1,0 +1,49 @@
+/* tokens.css — the shared palette for the logger (style.css) and the
+ * dashboard (dashboard.css). Change colors here only.
+ *
+ * Palette:  brown #493B2A · cream #FEFFEA · green #60935D (done)
+ *           slate #8797B2 (progress) · coral #EE6352 (not done / over / error)
+ */
+
+:root {
+  --bg: #FEFFEA;
+  --surface: #F3F1D9;
+  --surface-2: #E9E6CB;
+  --text: #493B2A;
+  --muted: rgba(73, 59, 42, 0.62);
+  --border: rgba(73, 59, 42, 0.14);
+  --done: #60935D;
+  --on-done: #FEFFEA;
+  --progress: #8797B2;
+  --progress-tint: rgba(135, 151, 178, 0.32);
+  --miss: #EE6352;
+  --miss-tint: rgba(238, 99, 82, 0.14);
+  --radius: 18px;
+  --gutter: 16px;
+  --shadow: 0 1px 2px rgba(73, 59, 42, 0.08), 0 2px 8px rgba(73, 59, 42, 0.06);
+  /* Dashboard: grid cells & chart chrome. --miss-cell is a much lighter
+   * coral than --done so the two differ in lightness, not just hue
+   * (validated for red-green colorblindness). */
+  --miss-cell: #F5B8AE;
+  --pending-cell: #E9E6CB;
+  --gridline: rgba(73, 59, 42, 0.12);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #2B231A;
+    --surface: #3A2F22;
+    --surface-2: #493B2A;
+    --text: #FEFFEA;
+    --muted: rgba(254, 255, 234, 0.6);
+    --border: rgba(254, 255, 234, 0.12);
+    --done: #5C8E59;
+    --progress-tint: rgba(135, 151, 178, 0.28);
+    --miss-tint: rgba(238, 99, 82, 0.2);
+    --shadow: none;
+    --miss-cell: #7A3B33;
+    --pending-cell: #493B2A;
+    --gridline: rgba(254, 255, 234, 0.12);
+  }
+}
