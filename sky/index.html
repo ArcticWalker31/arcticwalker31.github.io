@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover: the sky scene draws under the status bar / notch -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sky</title>
+  <meta name="description" content="Clean, accurate local weather">
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Sky">
+  <!-- Translucent: white status-bar text over the sky scene -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2E8FE0" id="theme-color">
+  <meta name="color-scheme" content="light dark">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- ===== Sky scene + current conditions ===== -->
+    <header class="hero">
+      <div id="scene"></div>
+      <div class="ptr" id="ptr" aria-hidden="true"></div>
+      <div class="hero-content">
+        <div class="hero-top">
+          <div class="now">
+            <div class="temp"><span id="temp">--</span><span class="deg">°F</span></div>
+            <div class="place"><span id="place-icon"></span><span id="place">Finding your location…</span></div>
+            <div class="cond" id="cond"></div>
+          </div>
+          <button class="round-btn" id="refresh" type="button" aria-label="Refresh"></button>
+        </div>
+        <div class="updated" id="updated" aria-live="polite"></div>
+      </div>
+    </header>
+
+    <!-- ===== Bottom sheet ===== -->
+    <main class="sheet">
+      <div class="notice" id="notice" hidden>
+        <p id="notice-text"></p>
+        <button class="pill-btn" id="notice-retry" type="button">Try again</button>
+      </div>
+
+      <section class="section" id="rain-section" aria-labelledby="rain-title">
+        <h2 id="rain-title">Next 2 hours</h2>
+        <p class="sub" id="rain-summary">—</p>
+        <div class="rain-strip" id="rain-strip"></div>
+      </section>
+
+      <section class="section" aria-labelledby="details-title">
+        <button class="section-head toggle" id="details-toggle" type="button" aria-expanded="false" aria-controls="details-grid">
+          <span>
+            <h2 id="details-title">Details</h2>
+            <span class="sub">Weather now</span>
+          </span>
+          <span class="chevron" id="details-chevron"></span>
+        </button>
+        <div class="details" id="details-grid"></div>
+      </section>
+
+      <section class="section" aria-labelledby="hourly-title">
+        <h2 id="hourly-title">Hourly</h2>
+        <p class="sub">48-hour forecast</p>
+        <div class="modes" role="radiogroup" aria-label="Hourly chart">
+          <button type="button" role="radio" data-mode="temp" class="mode-btn"><span class="mi" data-icon="thermometer"></span>Temp</button>
+          <button type="button" role="radio" data-mode="precip" class="mode-btn"><span class="mi" data-icon="umbrella"></span>Rain</button>
+          <button type="button" role="radio" data-mode="uv" class="mode-btn"><span class="mi" data-icon="uv"></span>UV</button>
+        </div>
+        <div class="legend" id="hourly-legend"></div>
+        <div class="hourly-scroll" id="hourly"></div>
+      </section>
+
+      <section class="section" aria-labelledby="daily-title">
+        <h2 id="daily-title">10-day forecast</h2>
+        <p class="sub">Tap a day for details</p>
+        <ul class="days" id="days"></ul>
+      </section>
+
+      <footer class="credits" id="credits">
+        Forecast: NOAA National Blend of Models + HRRR/GFS via
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+        Place names: BigDataCloud
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

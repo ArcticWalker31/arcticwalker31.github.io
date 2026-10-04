@@ -1,0 +1,57 @@
+/* style.css — app styles. Colors come from ../shared/tokens.css
+ * (--bg, --surface, --text, --muted, --border, --done, --progress, --miss …). */
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* Pad away from the notch, rounded corners and home indicator. */
+.view {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding:
+    calc(env(safe-area-inset-top) + 8px)
+    calc(env(safe-area-inset-right) + var(--gutter))
+    calc(env(safe-area-inset-bottom) + 24px)
+    calc(env(safe-area-inset-left) + var(--gutter));
+}
+
+.topbar { display: flex; align-items: center; gap: 8px; min-height: 48px; }
+.topbar h1 { flex: 1; text-align: center; font-size: 18px; margin: 0; }
+.home, .spacer { width: 72px; }
+.home { color: var(--muted); text-decoration: none; font-size: 15px; }
+
+.card {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* Tap targets of at least 48px for one-handed phone use. */
+.btn {
+  min-height: 48px;
+  padding: 8px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }

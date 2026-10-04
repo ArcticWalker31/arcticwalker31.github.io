@@ -1,0 +1,383 @@
+// app.js — Sky: location → forecast → render. Data logic is in weather.js,
+// the animated scene in scene.js, the hourly chart in chart.js.
+
+import * as W from './weather.js';
+import { getPosition, placeName, distanceKm, locationErrorText } from './geo.js';
+import { createScene } from './scene.js';
+import { hourlyChart } from './chart.js';
+import { icon } from './icons.js';
+
+const $ = (id) => document.getElementById(id);
+
+// localStorage is shared by every app on this site, so keys are prefixed.
+const NS = 'sky.';
+const store = {
+  get(key, fallback = null) {
+    try { return JSON.parse(localStorage.getItem(NS + key)) ?? fallback; } catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(NS + key, JSON.stringify(value)); } catch { /* storage blocked */ }
+  },
+};
+
+const STALE_MS = 10 * 60 * 1000;  // refetch if older than this
+const MOVED_KM = 2;               // a new place name if we moved this far
+
+let mode = store.get('mode', 'temp');
+let expandedDay = null;
+let busy = false;
+let status = { offline: false, usingLast: false, error: '' };
+const scene = createScene($('scene'));
+
+// ---------------------------------------------------------------------------
+// Data flow
+// ---------------------------------------------------------------------------
+
+async function refresh({ force = false } = {}) {
+  if (busy) return;
+  busy = true;
+  setSpinning(true);
+  try {
+    // 1. Where are we? Fall back to the last known spot.
+    let pos;
+    const last = store.get('loc');
+    try {
+      pos = await getPosition();
+      status.usingLast = false;
+      hideNotice();
+    } catch (err) {
+      if (!last) {
+        showNotice(locationErrorText(err));
+        return;
+      }
+      pos = last;
+      status.usingLast = true;
+      if (err?.code === 1) showNotice(locationErrorText(err));
+    }
+
+    // 2. Skip the network if the cache is fresh and we haven't moved.
+    const moved = !last || distanceKm(last, pos) > MOVED_KM;
+    const cache = store.get('cache');
+    if (!force && !moved && cache && Date.now() - cache.fetchedAt < STALE_MS) {
+      status.offline = false;
+      render();
+      return;
+    }
+
+    // 3. Fetch forecast (and a place name if we moved).
+    const [forecast, place] = await Promise.all([
+      W.fetchForecast(pos.lat, pos.lon),
+      moved || !last?.place ? placeName(pos.lat, pos.lon).catch(() => last?.place ?? null) : last.place,
+    ]);
+    store.set('loc', { lat: pos.lat, lon: pos.lon, place });
+    store.set('cache', { forecast, fetchedAt: Date.now() });
+    status.offline = false;
+    status.error = '';
+    render();
+  } catch (err) {
+    // Network or service failure: keep showing the cached forecast.
+    status.offline = !navigator.onLine;
+    status.error = status.offline ? '' : (err?.message || 'Couldn’t update');
+    renderUpdated();
+  } finally {
+    busy = false;
+    setSpinning(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+/** "Now" conditions: the live reading, or the hourly forecast if the cache is old. */
+function nowConditions(f) {
+  const nowStr = W.localNow(f.utcOffset);
+  const ageMin = (Date.parse(nowStr + ':00Z') - Date.parse(f.current.time + ':00Z')) / 60000;
+  if (ageMin < 60) return f.current;
+  const h = f.hourly[W.currentHourIndex(f)];
+  return { ...f.current, temp: h.temp, feels: h.feels, code: h.code, isDay: h.isDay, uv: h.uv, wind: h.wind, gust: h.gust, windDir: h.windDir, cloud: h.cloud, pressure: h.pressure };
+}
+
+function todayOf(f) {
+  const date = W.localNow(f.utcOffset).slice(0, 10);
+  return f.daily.find((d) => d.date === date) ?? f.daily[0];
+}
+
+/** dawn / day / dusk / night, plus where the sun is (0 = sunrise, 1 = sunset). */
+function sunPhase(f) {
+  const now = W.minutesOfDay(W.localNow(f.utcOffset));
+  const t = todayOf(f);
+  const rise = W.minutesOfDay(t.sunrise), set = W.minutesOfDay(t.sunset);
+  const sunPos = (now - rise) / (set - rise);
+  if (now < rise - 30 || now > set + 30) return { phase: 'night', sunPos: null };
+  if (now < rise + 45) return { phase: 'dawn', sunPos };
+  if (now > set - 45) return { phase: 'dusk', sunPos };
+  return { phase: 'day', sunPos };
+}
+
+function render() {
+  const cache = store.get('cache');
+  if (!cache) return renderEmpty();
+  const f = cache.forecast;
+  const now = nowConditions(f);
+  const d = W.describe(now.code);
+  const { phase, sunPos } = sunPhase(f);
+
+  // Scene + status-bar color
+  const pal = scene.update({ kind: d.kind, intensity: d.intensity, phase, sunPos, cloud: now.cloud, wind: now.wind });
+  $('theme-color').setAttribute('content', pal.top);
+
+  // Hero
+  $('temp').textContent = Math.round(now.temp);
+  const loc = store.get('loc');
+  $('place').textContent = loc?.place || 'Current location';
+  $('cond').textContent = `${d.label} · Feels like ${Math.round(now.feels)}°`;
+  renderUpdated();
+
+  renderRain(f);
+  renderDetails(f, now);
+  renderHourly(f);
+  renderDays(f, now);
+  $('credits').hidden = false;
+}
+
+function renderEmpty() {
+  scene.update({ kind: 'partly', intensity: 0, phase: 'day', sunPos: 0.5, cloud: 30, wind: 4 });
+  $('rain-summary').textContent = 'Loading forecast…';
+}
+
+function renderUpdated() {
+  const cache = store.get('cache');
+  const parts = [];
+  if (status.usingLast) parts.push('Using last location');
+  if (status.offline) parts.push('Offline');
+  if (status.error) parts.push(status.error);
+  if (cache) {
+    const min = Math.round((Date.now() - cache.fetchedAt) / 60000);
+    parts.push(min < 1 ? 'Updated just now' : min < 60 ? `Updated ${min} min ago` : `Updated ${Math.round(min / 60)} h ago`);
+  }
+  $('updated').textContent = parts.join(' · ');
+}
+
+function renderRain(f) {
+  const { text, slots } = W.nearTermPrecip(f);
+  $('rain-summary').textContent = text;
+  const max = Math.max(0.2, ...slots.map((s) => s.rate));
+  const bars = slots.map((s) => {
+    const wet = s.rate >= 0.01;
+    const h = wet ? Math.max(8, (s.rate / max) * 100) : 4;
+    const label = `${W.clockLabel(s.time)}: ${wet ? `${s.rate.toFixed(2)} in/hr` : 'dry'}`;
+    return `<span class="${wet ? '' : 'dry'}" style="height:${h}%" title="${label}" aria-label="${label}"></span>`;
+  }).join('');
+  $('rain-strip').innerHTML = `
+    <div class="rain-bars" role="img" aria-label="Precipitation in 15-minute steps for the next 2 hours">${bars}</div>
+    <div class="rain-axis"><span>Now</span><span>30 min</span><span>1 h</span><span>1.5 h</span><span>2 h</span></div>`;
+}
+
+function detail(iconName, value, label, { more = false, note = '' } = {}) {
+  return `<div class="detail${more ? ' more' : ''}">
+    ${icon(iconName, { size: 26 })}
+    <div><div class="value">${value}</div><div class="label">${label}</div>${note ? `<div class="note">${note}</div>` : ''}</div>
+  </div>`;
+}
+
+function renderDetails(f, now) {
+  const t = todayOf(f);
+  const trend = W.pressureTrend(f);
+  const arrow = `<span class="wind-arrow" style="transform:rotate(${(now.windDir ?? 0) + 180}deg)" title="Wind from ${W.compass(now.windDir)}">${icon('arrow', { size: 16, stroke: 2.25 })}</span>`;
+  const air = f.air;
+  const open = store.get('detailsOpen', false);
+  $('details-grid').classList.toggle('open', open);
+  $('details-toggle').setAttribute('aria-expanded', String(open));
+  $('details-grid').innerHTML = [
+    detail('thermometer', `${Math.round(t.hi)}° | ${Math.round(t.lo)}°`, 'High | Low'),
+    detail('feels', `${Math.round(now.feels)}°`, 'Feels like'),
+    detail('umbrella', `${t.prob ?? 0}%`, 'Rain chance', { note: t.precip >= 0.01 ? `${t.precip.toFixed(2)}″ today` : '' }),
+    detail('wind', `${Math.round(now.wind)} mph ${arrow}`, `Wind ${W.compass(now.windDir)}`, { note: now.gust ? `Gusts ${Math.round(now.gust)} mph` : '' }),
+    detail('uv', `${Math.round(now.uv ?? 0)}`, `UV · ${W.uvLevel(now.uv)}`, { more: true, note: `Peak ${Math.round(t.uvMax ?? 0)} today` }),
+    detail('leaf', air?.aqi != null ? String(Math.round(air.aqi)) : '—', `Air quality`, { more: true, note: air ? W.aqiLevel(air.aqi) : 'Unavailable' }),
+    detail('sunrise', W.clockLabel(t.sunrise), 'Sunrise', { more: true }),
+    detail('sunset', W.clockLabel(t.sunset), 'Sunset', { more: true }),
+    detail('droplet', `${Math.round(now.humidity)}%`, 'Humidity', { more: true }),
+    detail('dew', `${Math.round(now.dew)}°`, 'Dew point', { more: true }),
+    detail('gauge', now.pressure ? `${W.inHg(now.pressure).toFixed(2)}` : '—', 'Pressure (inHg)', { more: true, note: trend[0].toUpperCase() + trend.slice(1) }),
+  ].join('');
+}
+
+function renderHourly(f) {
+  const start = W.currentHourIndex(f);
+  const hours = f.hourly.slice(start, start + 48);
+  for (const b of document.querySelectorAll('.mode-btn')) b.setAttribute('aria-checked', String(b.dataset.mode === mode));
+  const legend = {
+    temp: '<span><i style="background:var(--c-temp)"></i>Temperature</span><span><i style="background:var(--c-temp);opacity:.35"></i>Feels like</span>',
+    precip: '<span>Chance of precipitation · amounts below</span>',
+    uv: '<span>UV index</span>',
+  }[mode];
+  $('hourly-legend').innerHTML = legend;
+  const box = $('hourly');
+  const scrollLeft = box.scrollLeft;
+  box.replaceChildren(hourlyChart(hours, {
+    mode, pointW: 54, every: 1, nowIndex: 0,
+    ariaLabel: `Next 48 hours: ${mode === 'temp' ? 'temperature' : mode === 'precip' ? 'chance of precipitation' : 'UV index'}`,
+  }));
+  box.scrollLeft = scrollLeft;
+}
+
+// Temperature → color for the 10-day range bars (cold blue → warm orange).
+const TEMP_STOPS = [[0, [108, 142, 232]], [32, [95, 168, 224]], [55, [120, 190, 160]], [70, [242, 181, 68]], [90, [226, 112, 58]], [105, [200, 60, 50]]];
+function tempColor(t) {
+  for (let i = 1; i < TEMP_STOPS.length; i++) {
+    const [t1, c1] = TEMP_STOPS[i];
+    const [t0, c0] = TEMP_STOPS[i - 1];
+    if (t <= t1) {
+      const k = Math.max(0, (t - t0) / (t1 - t0));
+      return `rgb(${c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(',')})`;
+    }
+  }
+  return 'rgb(200,60,50)';
+}
+
+function renderDays(f, now) {
+  const today = W.localNow(f.utcOffset).slice(0, 10);
+  const days = f.daily.filter((d) => d.date >= today).slice(0, 10);
+  const min = Math.min(...days.map((d) => d.lo));
+  const max = Math.max(...days.map((d) => d.hi));
+  const pct = (v) => ((v - min) / (max - min || 1)) * 100;
+
+  $('days').replaceChildren(...days.map((d, i) => {
+    const li = document.createElement('li');
+    li.className = 'day';
+    const open = expandedDay === d.date;
+    const name = i === 0 ? 'Today' : W.weekday(d.date);
+    const prob = d.prob >= 10 ? `${d.prob}%` : '';
+    const dot = i === 0 ? `<span class="now-dot" style="left:${pct(Math.min(Math.max(now.temp, d.lo), d.hi))}%"></span>` : '';
+    li.innerHTML = `
+      <button class="day-row" type="button" aria-expanded="${open}">
+        <span class="day-name">${name}</span>
+        ${icon(W.iconFor(d.code, true), { size: 24, label: W.describe(d.code).label })}
+        <span class="day-prob">${prob}</span>
+        <span class="day-lo">${Math.round(d.lo)}°</span>
+        <span class="range"><span class="fill" style="left:${pct(d.lo)}%;right:${100 - pct(d.hi)}%;background:linear-gradient(90deg, ${tempColor(d.lo)}, ${tempColor(d.hi)})"></span>${dot}</span>
+        <span class="day-hi">${Math.round(d.hi)}°</span>
+      </button>`;
+    li.querySelector('.day-row').addEventListener('click', () => {
+      expandedDay = open ? null : d.date;
+      renderDays(f, now);
+    });
+    if (open) li.append(dayDetails(f, d));
+    return li;
+  }));
+}
+
+function dayDetails(f, d) {
+  const box = document.createElement('div');
+  box.className = 'day-more';
+  const hours = f.hourly.filter((h) => h.time.startsWith(d.date));
+  const chartBox = document.createElement('div');
+  chartBox.className = 'day-chart';
+  box.append(chartBox);
+  // Size the chart to the list's width once it's in the page.
+  requestAnimationFrame(() => {
+    const width = chartBox.clientWidth || 340;
+    chartBox.replaceChildren(hourlyChart(hours, {
+      mode: 'temp', pointW: width / hours.length, every: 3, nowIndex: -1, plotH: 64,
+      ariaLabel: `${W.weekday(d.date, 'long')} hourly temperature`,
+    }));
+  });
+  const facts = document.createElement('div');
+  facts.className = 'day-facts';
+  const rows = [
+    [W.describe(d.code).label, 'Conditions'],
+    [`${d.prob ?? 0}% · ${(d.precip ?? 0).toFixed(2)}″`, 'Precipitation'],
+    [`${Math.round(d.windMax)} mph ${W.compass(d.windDir)}`, `Gusts ${Math.round(d.gustMax)} mph`],
+    [`${Math.round(d.uvMax ?? 0)} · ${W.uvLevel(d.uvMax)}`, 'Peak UV'],
+    [W.clockLabel(d.sunrise), 'Sunrise'],
+    [W.clockLabel(d.sunset), 'Sunset'],
+  ];
+  if (d.snow > 0) rows.splice(2, 0, [`${d.snow.toFixed(1)}″`, 'Snowfall']);
+  facts.innerHTML = rows.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
+  box.append(facts);
+  return box;
+}
+
+// ---------------------------------------------------------------------------
+// UI bits
+// ---------------------------------------------------------------------------
+
+function setSpinning(on) {
+  $('refresh').classList.toggle('spinning', on);
+}
+
+function showNotice(text) {
+  $('notice-text').textContent = text;
+  $('notice').hidden = false;
+}
+function hideNotice() {
+  $('notice').hidden = true;
+}
+
+/** Pull down at the top of the page to refresh. */
+function initPullToRefresh() {
+  const ptr = $('ptr');
+  let startY = null, pull = 0;
+  addEventListener('touchstart', (e) => {
+    startY = scrollY <= 0 ? e.touches[0].clientY : null;
+  }, { passive: true });
+  addEventListener('touchmove', (e) => {
+    if (startY == null) return;
+    pull = Math.max(0, e.touches[0].clientY - startY);
+    const k = Math.min(pull / 80, 1);
+    ptr.style.opacity = k;
+    ptr.style.transform = `translateY(${-40 + k * 50}px) rotate(${pull * 3}deg)`;
+  }, { passive: true });
+  addEventListener('touchend', () => {
+    if (startY != null && pull > 80) refresh({ force: true });
+    startY = null;
+    pull = 0;
+    ptr.style.opacity = 0;
+    ptr.style.transform = '';
+  });
+}
+
+function init() {
+  // Static icons
+  $('refresh').innerHTML = icon('refresh', { size: 22, stroke: 2 });
+  $('place-icon').innerHTML = icon('pin', { size: 18, stroke: 2 });
+  $('details-chevron').innerHTML = icon('chevron', { size: 26 });
+  $('ptr').innerHTML = icon('refresh', { size: 18, stroke: 2.25 });
+  for (const m of document.querySelectorAll('.mi')) m.innerHTML = icon(m.dataset.icon, { size: 20 });
+
+  $('refresh').addEventListener('click', () => refresh({ force: true }));
+  $('notice-retry').addEventListener('click', () => refresh({ force: true }));
+  $('details-toggle').addEventListener('click', () => {
+    const open = !store.get('detailsOpen', false);
+    store.set('detailsOpen', open);
+    $('details-grid').classList.toggle('open', open);
+    $('details-toggle').setAttribute('aria-expanded', String(open));
+  });
+  for (const b of document.querySelectorAll('.mode-btn')) {
+    b.addEventListener('click', () => {
+      mode = b.dataset.mode;
+      store.set('mode', mode);
+      const cache = store.get('cache');
+      if (cache) renderHourly(cache.forecast);
+    });
+  }
+  initPullToRefresh();
+
+  // Coming back to the app: refresh if stale, otherwise just re-render
+  // (the current hour and sun position may have moved on).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const cache = store.get('cache');
+    if (!cache || Date.now() - cache.fetchedAt > STALE_MS) refresh();
+    else render();
+  });
+  addEventListener('online', () => refresh());
+  setInterval(renderUpdated, 60 * 1000);
+
+  render();   // instant, from cache
+  refresh();  // then live
+}
+
+init();

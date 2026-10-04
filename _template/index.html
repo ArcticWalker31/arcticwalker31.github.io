@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover lets the page draw under the notch; CSS pads with safe-area insets -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>App Name</title>  <!-- TODO: rename -->
+  <meta name="description" content="TODO: one-line description">
+
+  <!-- Home-screen / full-screen app behaviour. manifest.json scopes the install to this folder. -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="App Name">  <!-- TODO: home-screen label -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FEFFEA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#2B231A" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+
+  <!-- Site-wide palette (light + dark), then this app's styles. -->
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="view">
+    <header class="topbar">
+      <a class="home" href="../" aria-label="All apps">‹ Apps</a>
+      <h1>App Name</h1>
+      <span class="spacer"></span>
+    </header>
+
+    <section class="card">
+      <p>Hello from the template. Taps so far: <strong id="count">0</strong></p>
+      <button class="btn primary" id="tap" type="button">Tap me</button>
+    </section>
+  </main>
+</body>
+</html>

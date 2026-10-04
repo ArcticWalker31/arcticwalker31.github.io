@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sky app icon; icons/*.png are rendered from the same shapes. -->
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E8FE0"/><stop offset="1" stop-color="#8FD3FA"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <circle cx="330" cy="180" r="112" fill="#FFF6D6" fill-opacity="0.27"/>
+  <circle cx="330" cy="180" r="78" fill="#FFF6D6"/>
+  <path d="M0 400 C150 350 330 370 512 340 V512 H0Z" fill="#2380C6"/>
+  <g fill="#fff"><circle cx="190" cy="300" r="58"/><circle cx="258" cy="268" r="72"/><circle cx="330" cy="302" r="50"/><rect x="120" y="300" width="270" height="60" rx="30"/></g>
+</svg>

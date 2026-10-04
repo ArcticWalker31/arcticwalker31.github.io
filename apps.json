@@ -1,0 +1,15 @@
+[
+  {
+    "path": "habits/",
+    "name": "Habits",
+    "description": "Daily habit logger",
+    "icon": "habits/icons/icon-192.png",
+    "links": [{ "label": "Stats", "path": "habits/dashboard.html" }]
+  },
+  {
+    "path": "sky/",
+    "name": "Sky",
+    "description": "Local weather",
+    "icon": "sky/icons/icon-192.png"
+  }
+]

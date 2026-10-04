@@ -1,125 +1,76 @@
-# Habits
+# arcticwalker31.github.io
 
-A personal habit logger: a static site on GitHub Pages that syncs through one secret GitHub Gist. It uses plain HTML/CSS/JS, with no build step and no dependencies.
+My personal web apps, all hosted from this one repo on GitHub Pages. Each app is a folder, and each folder is its own URL and its own home-screen app.
 
-- **Phone**: the logger (`index.html`). Pin it to your home screen.
-- **Laptop**: the stats dashboard (`dashboard.html`). Bookmark `https://<you>.github.io/<repo>/dashboard.html`.
-
-## Files
-
-| File | What it does |
+| App | URL |
 |---|---|
-| `index.html` | The logger page plus the settings screen |
-| `app.js` | UI: rendering, taps, settings |
-| `data.js` | Dates, completion rules, localStorage, Gist API, sync. No DOM rendering, so it can be reused by the dashboard |
-| `style.css` | Logger styles (mobile-first) |
-| `tokens.css` | Shared colors for light and dark mode, used by both pages |
-| `dashboard.html`, `dashboard.js`, `dashboard.css` | Read-only stats page for the laptop |
-| `stats.js` | Pure stats math (completion, streaks, weekdays), no DOM |
-| `manifest.json`, `icons/` | Home-screen app metadata and icons |
+| Launcher | https://arcticwalker31.github.io/ |
+| [Habits](habits/README.md) | https://arcticwalker31.github.io/habits/ (stats: `/habits/dashboard.html`) |
+| [Sky](sky/README.md) | https://arcticwalker31.github.io/sky/ (weather) |
 
-## 1. Create the GitHub token
+Plain HTML/CSS/JS everywhere: no build step, no npm.
 
-1. Go to GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**
-   (direct link: https://github.com/settings/personal-access-tokens/new).
-2. **Token name**: `habits`. **Expiration**: pick one, e.g. 1 year. You'll paste a new token when it expires (the app shows "Token invalid or expired").
-3. **Repository access**: leave the default (**Public repositories**, read-only). Gists aren't repositories, so this doesn't matter.
-4. **Permissions** → **Account permissions** → **Gists** → **Read and write**.
-   Leave every other permission at *No access*.
-5. Click **Generate token** and copy it (it starts with `github_pat_`). You can't view it again later, so keep it in your password manager.
+## Layout
 
-> **Security note.** The token is stored in your browser's localStorage. All GitHub Pages project sites under `<you>.github.io` share one browser origin, so any *other* Pages site you host on the same account could read it. That's why the token is limited to Gists only. Don't host untrusted code on the same `github.io` account, and keep an expiry on the token. Never commit a token to this repo.
-
-## 2. Enable GitHub Pages
-
-1. Push this repo to GitHub.
-2. In the repo: **Settings** → **Pages** → **Build and deployment** → **Source: Deploy from a branch** → **Branch: `main`**, folder **`/ (root)`** → **Save**.
-3. After a minute the site is live at `https://<you>.github.io/<repo>/`.
-
-There's no service worker, so a normal reload always gets the newest version. If iOS shows something stale, close the home-screen app fully and reopen it.
-
-## 3. First device (creates the Gist)
-
-1. Open the site. The settings screen appears on first launch.
-2. Paste the token → **Save token**.
-3. Tap **Create new Gist**. This creates a **secret** Gist containing `habits.json` with the default habits.
-4. The Gist ID fills in. Tap **Copy** and keep it for your second device.
-5. Tap **‹ Done** and start logging.
-
-## 4. Second device (connects to the same Gist)
-
-1. Open the site on the other device.
-2. Paste the same token (or make a second token the same way) → **Save token**.
-3. Paste the Gist ID (or the whole Gist URL) → **Connect to this Gist**.
-
-Both devices now read and write the same `habits.json`.
-
-## 5. Add to home screen
-
-- **iPhone (Safari)**: Share → **Add to Home Screen**.
-- **Android (Chrome)**: ⋮ menu → **Add to Home screen** / **Install app**.
-
-## How it works
-
-### Using the logger
-- **Check** habit: tap the card to mark it done; tap again to clear. **Long-press** marks it explicitly *not done* (coral).
-- **Minutes** habit: type the total for the day. It's complete when it's **at or under** the max. Clear the box to un-log it.
-- **Count** habit: − / +. The card fills toward the target, and going past the target is allowed. Pressing − at 1 un-logs it.
-- ‹ / › switch days. You can edit today and the previous 6 days, but not the future. The day rolls over at 3 AM by default (configurable in settings), so logging at 1 AM still counts for "yesterday".
-
-### Sync
-- Every change is applied instantly and cached in localStorage, so the app opens instantly and works offline.
-- Saves are debounced (~1 s). A save **fetches the latest Gist, replays only the changes made on this device, then PATCHes**, so changes from the other device aren't overwritten.
-- Unsynced changes are kept in localStorage and retried when you're back online or reopen the app.
-- The status pill (top left) shows Saved / Saving… / Offline / Sync error. Tap it to sync now.
-- Gist revisions (on gist.github.com → *Revisions*) are your backup and history.
-
-### Dashboard
-Open `dashboard.html` on the laptop. It uses the same token and Gist ID as the logger, stored in that browser, so connect once through the logger's settings on the laptop first. It refreshes when the tab regains focus.
-
-- **Range**: 7 / 30 / 90 days / All. Ranges over 120 days switch the top chart to weekly bars.
-- **Daily completion**: the share of habits done each day plus a 7-day average line. Green bars mark perfect days. "Show as table" lists the exact numbers.
-- **Day by day**: a habit × day grid. Hover any square for the logged value.
-- **Habits**: completion rate, current and best streak, and for minutes/count habits a chart of logged values against the goal line. The goal line steps on the day you changed the goal.
-- **By day of week**: completion % for each weekday.
-
-The rules: an unlogged day counts as **not done**. **Today is in progress**: it counts once a habit is complete, but never lowers a percentage or breaks a streak.
-
-### Data model (`habits.json`)
-
-```json
-{
-  "version": 1,
-  "settings": { "dayStartHour": 3 },
-  "habits": [
-    { "id": "workout", "name": "Workout", "type": "check", "createdAt": "2026-09-30" },
-    { "id": "insta", "name": "Instagram", "type": "minutes", "createdAt": "2026-09-30",
-      "goals": [{ "from": "2026-09-30", "value": 60 }] },
-    { "id": "water", "name": "Owala refills", "type": "count", "createdAt": "2026-09-30",
-      "goals": [{ "from": "2026-09-30", "value": 3 }] }
-  ],
-  "log": {
-    "2026-09-30": { "workout": true, "insta": 95, "water": 2 }
-  }
-}
+```
+index.html        launcher page (reads apps.json)
+apps.json         list of apps shown on the launcher
+shared/
+  tokens.css      site-wide colors for light and dark mode
+habits/           the habit tracker (its own README)
+sky/              the weather app (its own README)
+_template/        copy this to start a new app
+tools/
+  make-icons.ps1  generates letter icons for a new app
+.nojekyll         tells GitHub Pages to serve files as-is
 ```
 
-- Date keys are **local** dates (`YYYY-MM-DD`), never UTC.
-- `log[date][habitId]` missing means *not logged*. `false` means explicitly *not done*.
-- `goals` is a history. The goal in effect on a date is the last entry with `from ≤ date`, so changing a target never rewrites old results. Use `effectiveGoal(habit, date)` from `data.js`.
-- A habit counts on a day only if `createdAt ≤ day` and (if archived) `day < archivedAt`. Use `isActiveOn` / `dayProgress`.
-- Array order of `habits` is display order.
+## One-time setup
 
-## Regenerating the PNG icons
+1. **Rename the repo** to `arcticwalker31.github.io` (GitHub → repo **Settings** → **General** → *Repository name*).
+   A repo with exactly this name is your *user site*, served at the root URL, so apps live at `arcticwalker31.github.io/<app>/`.
+2. Point your local clone at the new name. GitHub redirects the old name, but it's cleaner to update:
+   ```
+   git remote set-url origin https://github.com/ArcticWalker31/arcticwalker31.github.io.git
+   ```
+3. **Pages**: repo **Settings** → **Pages** → *Source: Deploy from a branch* → `main` / `/ (root)` → **Save** (check it's still set after the rename).
+4. The old address `arcticwalker31.github.io/habit_tracker/` stops working. **Re-add the Habits home-screen icon** from `arcticwalker31.github.io/habits/`.
+   Your habit data, token and Gist ID are kept, because localStorage is tied to `arcticwalker31.github.io` and not the path. Everything is in the Gist anyway.
 
-`icons/icon.svg` is the source. The PNGs (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png`) were rendered once from the same shapes and committed as static files. If you change the icon, re-export them at those sizes with any image tool.
+## Adding a new app
+
+1. Copy `_template/` to a new folder with a short URL-friendly name, e.g. `budget/`.
+2. In the new folder:
+   - `index.html`: replace every "App Name" / TODO.
+   - `manifest.json`: set `name`, `short_name`, `description`.
+   - `app.js`: set `NS` to a unique storage prefix, e.g. `'budget.'`.
+3. Make its icons from the repo root in PowerShell:
+   ```
+   .\tools\make-icons.ps1 -Dir budget -Letter B -Bg '#60935D'
+   ```
+   Or put your own PNGs in `budget/icons/` (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png` at 180×180, plus `icon.svg`).
+4. Add it to `apps.json` so it shows on the launcher:
+   ```json
+   { "path": "budget/", "name": "Budget", "description": "Spending log", "icon": "budget/icons/icon-192.png" }
+   ```
+5. Commit and push. It's live at `https://arcticwalker31.github.io/budget/` within a minute or two.
+
+## Rules every app follows
+
+- **Namespace localStorage keys.** All apps share one origin and therefore one localStorage. Prefix every key with the app's own namespace (`ht.` for Habits) so apps can't clobber each other.
+- **Use relative paths only** (`icons/x.png`, `../shared/tokens.css`). Never start a path with `/`, so apps keep working locally and if the site ever moves.
+- **Keep the manifest's `start_url` and `scope` as `"./"`** so each folder installs as a separate home-screen app.
+- **Shared code goes in `shared/`.** Right now that's only the palette. If a second app needs phone↔laptop sync, the Gist code in `habits/data.js` is the candidate to move there.
+- **Secrets never go in the repo.** Tokens are pasted into the app and live only in the browser.
+
+> **Security note.** Every app here can read every other app's localStorage, including the Habits GitHub token. That's fine because you write all the code, but don't add third-party code you haven't read, and keep the token limited to Gists.
 
 ## Local testing
 
-ES modules don't load from `file://`, so serve the folder:
+Serve the repo root (apps reach `../shared/`, and ES modules don't load from `file://`):
 
 ```
 python -m http.server 8000
 ```
 
-Then open http://localhost:8000.
+Then open http://localhost:8000/ for the launcher, or http://localhost:8000/habits/.

@@ -1,5 +1,5 @@
-/* tokens.css — the shared palette for the logger (style.css) and the
- * dashboard (dashboard.css). Change colors here only.
+/* tokens.css — the site-wide palette, shared by every app (link it as
+ * ../shared/tokens.css). Change colors here only.
  *
  * Palette:  brown #493B2A · cream #FEFFEA · green #60935D (done)
  *           slate #8797B2 (progress) · coral #EE6352 (not done / over / error)
