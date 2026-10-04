@@ -199,53 +199,227 @@ async function openStopSearch() {
 
 // ----- Live map (Leaflet, loaded on first use) -----
 
-let map = null, busLayer = null, meMarker = null, stopLayer = null;
+// Vector map (MapLibre GL + free OpenFreeMap tiles, no API key): renders like
+// Apple/Google Maps, with crisp labels, smooth zoom and a real dark style.
+const MAP_JS = 'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js';
+const MAP_CSS = 'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css';
+const MAP_STYLES = {
+  light: 'https://tiles.openfreemap.org/styles/liberty',
+  dark: 'https://tiles.openfreemap.org/styles/dark',
+};
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function loadLeaflet() {
-  if (window.L) return Promise.resolve();
+let map = null, meMarker = null;
+const busMarkers = new Map(); // bus id → { marker, popup, bus }
+let openBusId = null;         // bus whose popup is open
+let routeData = null;         // GeoJSON for the open bus's route (re-applied after style changes)
+let arrowMarkers = [];
+
+function loadMapLibrary() {
+  if (window.maplibregl) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    css.href = MAP_CSS;
     document.head.append(css);
     const js = document.createElement('script');
-    js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    js.src = MAP_JS;
     js.onload = resolve;
     js.onerror = () => reject(new Error('Map library failed to load'));
     document.head.append(js);
   });
 }
 
+/** "Updated 38s ago" / "Updated 3 min ago" */
+function ageText(updatedAt) {
+  if (!updatedAt) return 'Update time unknown';
+  const sec = Math.max(0, Math.round((Date.now() - updatedAt) / 1000));
+  return sec < 60 ? `Updated ${sec}s ago` : `Updated ${Math.round(sec / 60)} min ago`;
+}
+
+function busElement(b) {
+  const el = document.createElement('div');
+  el.className = 'bus-icon';
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', `${b.route} bus`);
+  fillBusElement(el, b);
+  return el;
+}
+function fillBusElement(el, b) {
+  const r = routes[b.route] || { color: '#444', text: '#fff' };
+  // The arrow ring rotates with the bus heading; the label stays upright.
+  el.innerHTML = `<div class="bus-heading" style="transform:rotate(${b.heading}deg)"><i style="border-bottom-color:${r.color}"></i></div>
+    <div class="bus-dot" style="background:${r.color};color:${r.text}">${esc(b.route)}</div>`;
+}
+
+function busPopupHTML(b) {
+  const r = routes[b.route] || { name: b.route };
+  const full = b.full != null ? `<div class="pop-row">${b.full}% full</div>` : '';
+  return `<div class="pop-title">${routeChip(b.route)}<span>${esc(r.name)}</span></div>${full}
+    <div class="pop-row" data-next></div>
+    <div class="pop-age" data-age>${ageText(b.updatedAt)}</div>`;
+}
+
+/** Glide a marker to its new position instead of jumping. */
+function glide(marker, to, ms = 1200) {
+  const from = marker.getLngLat();
+  if (reducedMotion() || distanceM({ lat: from.lat, lon: from.lng }, { lat: to[1], lon: to[0] }) > 2000) return marker.setLngLat(to);
+  const t0 = performance.now();
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / ms);
+    const e = 1 - (1 - k) ** 3; // ease-out
+    marker.setLngLat([from.lng + (to[0] - from.lng) * e, from.lat + (to[1] - from.lat) * e]);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ----- Tapped bus: draw the route ahead -----
+
+function bearing(a, b) {
+  const rad = Math.PI / 180;
+  const y = Math.sin((b.lon - a.lon) * rad) * Math.cos(b.lat * rad);
+  const x = Math.cos(a.lat * rad) * Math.sin(b.lat * rad) - Math.sin(a.lat * rad) * Math.cos(b.lat * rad) * Math.cos((b.lon - a.lon) * rad);
+  return (Math.atan2(y, x) / rad + 360) % 360;
+}
+
+const EMPTY = { type: 'FeatureCollection', features: [] };
+
+/** Route line layers; re-added whenever the map style (light/dark) loads. */
+function addRouteLayers() {
+  if (map.getSource('route')) return;
+  map.addSource('route', { type: 'geojson', data: routeData || EMPTY });
+  const line = { 'line-cap': 'round', 'line-join': 'round' };
+  map.addLayer({ id: 'route-behind', type: 'line', source: 'route', filter: ['==', ['get', 'part'], 'behind'],
+    layout: line, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.3 } });
+  map.addLayer({ id: 'route-casing', type: 'line', source: 'route', filter: ['==', ['get', 'part'], 'ahead'],
+    layout: line, paint: { 'line-color': '#FFFFFF', 'line-width': 10 } });
+  map.addLayer({ id: 'route-ahead', type: 'line', source: 'route', filter: ['==', ['get', 'part'], 'ahead'],
+    layout: line, paint: { 'line-color': ['get', 'color'], 'line-width': 6 } });
+  map.addLayer({ id: 'route-stops', type: 'circle', source: 'route', filter: ['==', ['get', 'part'], 'stop'],
+    paint: { 'circle-radius': 4.5, 'circle-color': '#FFFFFF', 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 2.5 } });
+}
+
+function clearRoute() {
+  routeData = null;
+  map?.getSource('route')?.setData(EMPTY);
+  arrowMarkers.forEach((m) => m.remove());
+  arrowMarkers = [];
+}
+
+/**
+ * The bus's pattern: the stretch already driven faded, the stretch ahead bold
+ * in the route color with direction arrows and its stops; the next stop goes
+ * into the popup.
+ */
+async function showRoute(bus) {
+  if (!bus.pattern) return;
+  let path;
+  try { path = await BT.getPatternPath(bus.pattern); } catch { return; }
+  if (openBusId !== bus.id || path.length < 2) return; // closed meanwhile
+
+  let at = 0, best = Infinity; // closest path point to the bus
+  path.forEach((p, i) => {
+    const d = distanceM(p, bus);
+    if (d < best) { best = d; at = i; }
+  });
+  const color = (routes[bus.route] || { color: '#444' }).color;
+  const lnglat = (p) => [p.lon, p.lat];
+  const behind = path.slice(0, at + 1);
+  const ahead = [{ lat: bus.lat, lon: bus.lon }, ...path.slice(at + 1)];
+  const upcoming = path.slice(at + 1).filter((p) => p.stop);
+
+  const features = [];
+  if (behind.length > 1) features.push({ type: 'Feature', properties: { part: 'behind', color }, geometry: { type: 'LineString', coordinates: behind.map(lnglat) } });
+  features.push({ type: 'Feature', properties: { part: 'ahead', color }, geometry: { type: 'LineString', coordinates: ahead.map(lnglat) } });
+  for (const s of upcoming) features.push({ type: 'Feature', properties: { part: 'stop', color, name: s.name }, geometry: { type: 'Point', coordinates: lnglat(s) } });
+  routeData = { type: 'FeatureCollection', features };
+  map.getSource('route')?.setData(routeData);
+
+  // Direction arrows roughly every 250 m along the stretch ahead.
+  arrowMarkers.forEach((m) => m.remove());
+  arrowMarkers = [];
+  let run = 0;
+  for (let i = 1; i < ahead.length; i++) {
+    run += distanceM(ahead[i - 1], ahead[i]);
+    if (run < 250) continue;
+    run = 0;
+    const el = document.createElement('div');
+    el.className = 'route-arrow';
+    el.style.color = color;
+    arrowMarkers.push(new maplibregl.Marker({ element: el, rotation: bearing(ahead[i - 1], ahead[i]), rotationAlignment: 'map' })
+      .setLngLat(lnglat(ahead[i])).addTo(map));
+  }
+
+  const el = busMarkers.get(bus.id)?.popup.getElement()?.querySelector('[data-next]');
+  if (el) el.textContent = upcoming[0] ? `Next stop: ${upcoming[0].name}` : 'End of the line';
+}
+
 async function refreshMap() {
-  await loadLeaflet();
+  await loadMapLibrary();
   if (!map) {
-    map = L.map('bus-map', { zoomControl: false, attributionControl: true }).setView([37.2284, -80.4234], 15);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap',
-    }).addTo(map);
-    busLayer = L.layerGroup().addTo(map);
-    stopLayer = L.layerGroup().addTo(map);
+    map = new maplibregl.Map({
+      container: 'bus-map',
+      style: MAP_STYLES[darkQuery.matches ? 'dark' : 'light'],
+      center: [-80.4234, 37.2284],
+      zoom: 14.6,
+      attributionControl: { compact: true },
+      dragRotate: false,
+      pitchWithRotate: false,
+    });
+    map.touchZoomRotate.disableRotation();
+    map.on('style.load', addRouteLayers);
+    darkQuery.addEventListener?.('change', () => map.setStyle(MAP_STYLES[darkQuery.matches ? 'dark' : 'light']));
+
     for (const code of favorites) {
       const s = stops.find((x) => x.code === code);
-      if (s) L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', html: '<div class="stop-marker"></div>', iconSize: [10, 10] }) })
-        .bindTooltip(s.name).addTo(stopLayer);
+      if (!s) continue;
+      const el = document.createElement('div');
+      el.className = 'stop-marker';
+      el.title = s.name;
+      new maplibregl.Marker({ element: el }).setLngLat([s.lon, s.lat]).addTo(map);
     }
+    // Tick the open popup's "Updated Xs ago" every second.
+    setInterval(() => {
+      const entry = busMarkers.get(openBusId);
+      const el = entry?.popup.getElement()?.querySelector('[data-age]');
+      if (el) el.textContent = ageText(entry.bus.updatedAt);
+    }, 1000);
     getPosition().then((p) => {
       position = p;
-      meMarker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: '', html: '<div class="me-marker"></div>', iconSize: [16, 16] }), zIndexOffset: 1000 }).addTo(map);
+      const el = document.createElement('div');
+      el.className = 'me-marker';
+      meMarker = new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(map);
     }).catch(() => {});
   }
-  map.invalidateSize();
-  requestAnimationFrame(() => map.invalidateSize()); // after the container is laid out
+  map.resize();
+  requestAnimationFrame(() => map.resize()); // after the container is laid out
+
   const buses = await BT.getBuses();
-  busLayer.clearLayers();
+  const seen = new Set();
   for (const b of buses) {
-    const r = routes[b.route] || { color: '#444', text: '#fff', name: b.route };
-    const full = b.full != null ? ` · ${b.full}% full` : '';
-    L.marker([b.lat, b.lon], {
-      icon: L.divIcon({ className: '', html: `<div class="bus-marker" style="background:${r.color};color:${r.text}">${esc(b.route)}</div>`, iconSize: [34, 34] }),
-    }).bindPopup(`<b>${esc(r.name)}</b>${esc(full)}`).addTo(busLayer);
+    seen.add(b.id);
+    const entry = busMarkers.get(b.id);
+    if (entry) {
+      entry.bus = b;
+      glide(entry.marker, [b.lon, b.lat]);
+      fillBusElement(entry.marker.getElement(), b);
+      if (openBusId !== b.id) entry.popup.setHTML(busPopupHTML(b));
+    } else {
+      const popup = new maplibregl.Popup({ closeButton: false, offset: 24, className: 'bus-popup', maxWidth: '260px' }).setHTML(busPopupHTML(b));
+      popup.on('open', () => { openBusId = b.id; showRoute(busMarkers.get(b.id).bus); });
+      popup.on('close', () => { if (openBusId === b.id) { openBusId = null; clearRoute(); } });
+      const marker = new maplibregl.Marker({ element: busElement(b) }).setLngLat([b.lon, b.lat]).setPopup(popup).addTo(map);
+      busMarkers.set(b.id, { marker, popup, bus: b });
+    }
+  }
+  // Re-draw the open bus's route from its new position.
+  const open = busMarkers.get(openBusId);
+  if (open) showRoute(open.bus);
+  // Buses that went off duty
+  for (const [id, entry] of busMarkers) {
+    if (!seen.has(id)) { entry.marker.remove(); busMarkers.delete(id); }
   }
   markUpdated('bus', `${buses.length} buses running`);
 }
@@ -281,21 +455,36 @@ async function refreshGym() {
       <div class="row1"><span class="fac">${esc(f.name)}</span><span class="level ${lvl.key}">${lvl.label}</span></div>
       <div class="pct">${pct}%</div>
       <div class="meter ${lvl.key}" role="img" aria-label="${pct}% full"><span style="width:${Math.min(pct, 100)}%"></span></div>
-      <div class="meta"><span>${f.count.toLocaleString()} of ${f.max.toLocaleString()} people</span><span>${esc(gymHoursText(H[f.id], now))}</span></div>
+      <div class="meta"><span>${f.count.toLocaleString()} of ${f.max.toLocaleString()} people</span></div>
+      ${(() => {
+        const h = gymHours(f.id, H[f.id], now);
+        const cls = h.open === true ? 'open' : h.open === false ? 'closed' : '';
+        return `<div class="gym-hours">${icon('clock', { size: 16 })}<span>${esc(h.range)}</span>${h.status ? `<b class="${cls}">${esc(h.status)}</b>` : ''}</div>`;
+      })()}
     </div>`;
   }).join('');
   markUpdated('gym', occ.value.asOf ? `Count as of ${occ.value.asOf}` : '');
 }
 
-function gymHoursText(periods, now) {
-  if (periods === undefined) return '';
-  if (!periods.length) return 'Closed today';
+/**
+ * Today's hours line for a facility: { range: 'Today 10 AM – 10 PM', status, open }.
+ * `periods` undefined = no published hours (or the relay isn't set up).
+ */
+function gymHours(facilityId, periods, now) {
+  if (periods === undefined) {
+    const why = facilityId === 'boulder' ? 'Hours not published' : hasRelay() ? 'Hours unavailable' : 'Hours need the relay (Settings)';
+    return { range: why, status: '', open: null };
+  }
+  if (!periods.length) return { range: 'Closed today', status: '', open: false };
+  const range = `Today ${periods.map((p) => `${clock(p.open)} – ${clock(p.close)}`).join(', ')}`;
   const cur = periods.find((p) => p.open <= now && now < p.close);
-  const range = periods.map((p) => `${clock(p.open)}–${clock(p.close)}`).join(', ');
-  if (cur) return `Open until ${clock(cur.close)}`;
+  if (cur) {
+    const left = cur.close - now;
+    return { range, status: left <= 60 * 60000 ? `Closes in ${inTime(left)}` : `Open · closes ${clock(cur.close)}`, open: true };
+  }
   const next = periods.find((p) => p.open > now);
-  if (next) return `Opens ${clock(next.open)} · ${range}`;
-  return `Closed · was ${range}`;
+  if (next) return { range, status: `Opens ${clock(next.open)}`, open: false };
+  return { range, status: 'Closed for the day', open: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -407,8 +596,8 @@ function init() {
   $('map-locate').addEventListener('click', () => {
     getPosition().then((p) => {
       position = p;
-      map?.setView([p.lat, p.lon], 16);
-      meMarker?.setLatLng([p.lat, p.lon]);
+      map?.flyTo({ center: [p.lon, p.lat], zoom: 16 });
+      meMarker?.setLngLat([p.lon, p.lat]);
     }).catch(() => {});
   });
 

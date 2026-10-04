@@ -33,7 +33,8 @@ If you ever rename the site or test locally on a different port, update `ALLOWED
 - **BT only lists the routes running today.** The stop list builds up as the app sees new routes, so weekday-only stops may not show in search until you've opened the app on a weekday.
 - **Gym counts** come from ID swipes, so they're only as accurate as people swiping in and out. The Bouldering Wall has no separate published hours.
 - **Times past midnight** (e.g. Xpress Lane until 2 AM) count as the same night.
-- **Map**: OpenStreetMap tiles, loaded only when you open the Map view. Buses refresh every 10 seconds while it's on screen.
+- **Map**: a vector map (MapLibre GL + free OpenFreeMap tiles, no API key) in a Google-Maps-like style, with a dark version in dark mode. It loads only when you open the Map view. Buses refresh every 10 seconds and glide to their new positions. Tap a bus to see its route ahead (bold, with direction arrows and upcoming stops), its next stop, how full it is, and when its GPS last updated.
+- **Gym hours** show today's full hours and whether each facility is open now.
 - Everything pauses when the app is in the background.
 
 ## Files

@@ -69,7 +69,10 @@ export async function getDepartures(stopCode, count = 3) {
   return data.map((d) => ({ route: d.routeShortName, pattern: d.patternName, time: new Date(d.adjustedDepartureTime) }));
 }
 
-/** Live buses: [{ id, route, pattern, lat, lon, heading, full (0–100 or null), atStop }] */
+/**
+ * Live buses: [{ id, route, pattern, lat, lon, heading, full (0–100 or null),
+ *   atStop, updatedAt (ms epoch of the GPS fix) }]
+ */
 export async function getBuses() {
   const data = await call('getBuses');
   return data
@@ -80,7 +83,25 @@ export async function getBuses() {
         id: b.id, route: b.routeId, pattern: b.patternName,
         lat: Number(s.realtimeLatitude ?? s.latitude), lon: Number(s.realtimeLongitude ?? s.longitude),
         heading: Number(s.direction) || 0, full, atStop: s.isBusAtStop === 'Y',
+        updatedAt: Number(s.version) || null, // BT's "version" is the GPS fix time
       };
     })
     .filter((b) => b.route && Number.isFinite(b.lat) && Number.isFinite(b.lon));
+}
+
+const pathCache = new Map();
+
+/**
+ * A route pattern's path in driving order:
+ * [{ lat, lon, stop: boolean, name, code }] (waypoints have stop=false).
+ * Cached for the session.
+ */
+export async function getPatternPath(patternName) {
+  if (pathCache.has(patternName)) return pathCache.get(patternName);
+  const points = await call('getPatternPoints', { patternName });
+  const path = points
+    .map((p) => ({ lat: +p.latitude, lon: +p.longitude, stop: p.isBusStop === 'Y', name: p.patternPointName, code: p.stopCode }))
+    .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+  pathCache.set(patternName, path);
+  return path;
 }

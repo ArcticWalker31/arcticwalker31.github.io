@@ -155,24 +155,71 @@ button { cursor: pointer; }
 }
 #bus-map { position: absolute; inset: 0; background: var(--surface-2); }
 .map-locate {
-  position: absolute; right: 12px; bottom: 12px; z-index: 500;
+  position: absolute; right: 12px; bottom: 40px; z-index: 5;
   width: 44px; height: 44px; display: grid; place-items: center;
   border: 0; border-radius: 50%;
   background: var(--card); color: var(--text);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-.bus-marker {
+/* Bus marker: route-colored dot with the route code, plus a small arrow
+ * that rotates to the bus's heading. */
+.bus-icon { position: relative; width: 44px; height: 44px; cursor: pointer; }
+.bus-heading { position: absolute; inset: 0; transition: transform 0.6s ease; }
+.bus-heading i {
+  position: absolute; left: 50%; top: -1px; margin-left: -6px;
+  width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-bottom: 8px solid;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff);
+}
+.bus-dot {
+  position: absolute; left: 7px; top: 7px;
+  width: 30px; height: 30px; border-radius: 50%;
   display: grid; place-items: center;
-  width: 34px; height: 34px; border-radius: 50%;
-  font: 700 10px/1 -apple-system, system-ui, sans-serif;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  font: 800 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
-.me-marker { width: 16px; height: 16px; border-radius: 50%; background: #2F7DF6; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(47, 125, 246, 0.2); }
-.stop-marker { width: 10px; height: 10px; border-radius: 50%; background: var(--card); border: 2px solid var(--text); }
-@media (prefers-color-scheme: dark) {
-  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9); }
+/* Blue "you are here" dot with a soft pulse, like Apple Maps. */
+.me-marker {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #0A84FF; border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  animation: me-pulse 2.4s ease-out infinite;
 }
+@keyframes me-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3); }
+  100% { box-shadow: 0 0 0 18px rgba(10, 132, 255, 0), 0 1px 4px rgba(0, 0, 0, 0.3); }
+}
+.stop-marker { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+/* Direction chevron on the route ahead */
+.route-arrow { width: 14px; height: 14px; display: grid; place-items: center; }
+.route-arrow::before {
+  content: ""; width: 0; height: 0;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-bottom: 8px solid currentColor;
+  filter: drop-shadow(0 0 1.5px #fff);
+}
+
+/* MapLibre chrome restyled to match the app */
+.maplibregl-map { font: inherit; }
+.bus-popup .maplibregl-popup-content {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--card); color: var(--text);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+  font-size: 14px; line-height: 1.35; min-width: 170px;
+}
+.bus-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--card); }
+.bus-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--card); }
+.bus-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--card); }
+.bus-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--card); }
+.pop-title { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 15px; }
+.pop-row { margin-top: 6px; }
+.pop-row:empty { display: none; }
+.pop-age { margin-top: 6px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .me-marker { animation: none; } .bus-heading { transition: none; } }
 
 /* ---------- Gym ---------- */
 .gym-card .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -186,6 +233,15 @@ button { cursor: pointer; }
 .meter { height: 10px; margin: 10px 0 8px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
 .meter span { display: block; height: 100%; border-radius: 5px; background: var(--lvl); }
 .gym-card .meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.gym-hours {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+.gym-hours .icon { color: var(--muted); }
+.gym-hours b { margin-left: auto; font-weight: 600; }
+.gym-hours b.open { color: var(--quiet); }
+.gym-hours b.closed { color: var(--muted); }
 
 /* ---------- Dining ---------- */
 .dining-group h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 22px 4px 8px; }
