@@ -3,7 +3,7 @@
 
 import * as W from './weather.js';
 import { getPosition, placeName, distanceKm, locationErrorText } from './geo.js';
-import { createScene } from './scene.js';
+import { createScene, THEMES, paletteColors } from './scene.js';
 import { hourlyChart } from './chart.js';
 import { icon } from './icons.js';
 
@@ -22,8 +22,10 @@ const store = {
 
 const STALE_MS = 10 * 60 * 1000;  // refetch if older than this
 const MOVED_KM = 2;               // a new place name if we moved this far
+const PLACE_V = 2;                // bump when placeName() logic changes, to refresh saved names
 
 let mode = store.get('mode', 'temp');
+let theme = THEMES[store.get('theme')] ? store.get('theme') : 'classic';
 let expandedDay = null;
 let busy = false;
 let status = { offline: false, usingLast: false, error: '' };
@@ -57,19 +59,20 @@ async function refresh({ force = false } = {}) {
 
     // 2. Skip the network if the cache is fresh and we haven't moved.
     const moved = !last || distanceKm(last, pos) > MOVED_KM;
+    const needPlace = moved || !last?.place || last.placeV !== PLACE_V;
     const cache = store.get('cache');
-    if (!force && !moved && cache && Date.now() - cache.fetchedAt < STALE_MS) {
+    if (!force && !needPlace && cache && Date.now() - cache.fetchedAt < STALE_MS) {
       status.offline = false;
       render();
       return;
     }
 
-    // 3. Fetch forecast (and a place name if we moved).
+    // 3. Fetch forecast (and a place name if we moved or it's outdated).
     const [forecast, place] = await Promise.all([
       W.fetchForecast(pos.lat, pos.lon),
-      moved || !last?.place ? placeName(pos.lat, pos.lon).catch(() => last?.place ?? null) : last.place,
+      needPlace ? placeName(pos.lat, pos.lon).catch(() => last?.place ?? null) : last.place,
     ]);
-    store.set('loc', { lat: pos.lat, lon: pos.lon, place });
+    store.set('loc', { lat: pos.lat, lon: pos.lon, place, placeV: PLACE_V });
     store.set('cache', { forecast, fetchedAt: Date.now() });
     status.offline = false;
     status.error = '';
@@ -124,7 +127,7 @@ function render() {
   const { phase, sunPos } = sunPhase(f);
 
   // Scene + status-bar color
-  const pal = scene.update({ kind: d.kind, intensity: d.intensity, phase, sunPos, cloud: now.cloud, wind: now.wind });
+  const pal = scene.update({ kind: d.kind, intensity: d.intensity, phase, sunPos, cloud: now.cloud, wind: now.wind, theme });
   $('theme-color').setAttribute('content', pal.top);
 
   // Hero
@@ -142,7 +145,8 @@ function render() {
 }
 
 function renderEmpty() {
-  scene.update({ kind: 'partly', intensity: 0, phase: 'day', sunPos: 0.5, cloud: 30, wind: 4 });
+  const pal = scene.update({ kind: 'partly', intensity: 0, phase: 'day', sunPos: 0.5, cloud: 30, wind: 4, theme });
+  $('theme-color').setAttribute('content', pal.top);
   $('rain-summary').textContent = 'Loading forecast…';
 }
 
@@ -305,7 +309,57 @@ function dayDetails(f, d) {
 // ---------------------------------------------------------------------------
 
 function setSpinning(on) {
-  $('refresh').classList.toggle('spinning', on);
+  $('ptr').classList.toggle('busy', on);
+  $('refresh').disabled = on;
+  $('refresh-label').textContent = on ? 'Updating…' : 'Refresh now';
+}
+
+// ---------------------------------------------------------------------------
+// Settings: color schemes
+// ---------------------------------------------------------------------------
+
+/** Tiny landscape preview of a scheme's clear-day look. */
+function themePreview(id) {
+  const c = paletteColors('clear', id);
+  return `<svg viewBox="0 0 120 74" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.top}"/><stop offset="1" stop-color="${c.bottom}"/></linearGradient></defs>
+    <rect width="120" height="74" fill="url(#g-${id})"/>
+    <circle cx="88" cy="24" r="10" fill="${c.body}"/>
+    <path d="M0 50 C30 40 60 44 120 38 V74 H0Z" fill="${c.far}"/>
+    <path d="M0 60 C40 52 80 62 120 54 V74 H0Z" fill="${c.near}"/>
+  </svg>`;
+}
+
+function renderThemes() {
+  $('themes').innerHTML = Object.entries(THEMES).map(([id, t]) => `
+    <button class="theme-btn" type="button" role="radio" data-theme="${id}" aria-checked="${id === theme}">
+      <span class="theme-preview">${themePreview(id)}</span>
+      <span class="theme-name">${t.name}</span>
+    </button>`).join('');
+}
+
+function setTheme(id) {
+  theme = id;
+  store.set('theme', id);
+  document.documentElement.dataset.theme = id;
+  for (const b of $('themes').querySelectorAll('.theme-btn')) b.setAttribute('aria-checked', String(b.dataset.theme === id));
+  if (store.get('cache')) render();
+  else renderEmpty();
+}
+
+function initSettings() {
+  const dlg = $('settings');
+  $('open-settings').innerHTML = icon('settings', { size: 22, stroke: 2 });
+  $('close-settings').innerHTML = icon('close', { size: 20, stroke: 2 });
+  $('refresh-icon').innerHTML = icon('refresh', { size: 18, stroke: 2 });
+  renderThemes();
+  $('open-settings').addEventListener('click', () => dlg.showModal());
+  $('close-settings').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // tap the backdrop
+  $('themes').addEventListener('click', (e) => {
+    const b = e.target.closest('.theme-btn');
+    if (b) setTheme(b.dataset.theme);
+  });
 }
 
 function showNotice(text) {
@@ -341,7 +395,8 @@ function initPullToRefresh() {
 
 function init() {
   // Static icons
-  $('refresh').innerHTML = icon('refresh', { size: 22, stroke: 2 });
+  document.documentElement.dataset.theme = theme;
+  initSettings();
   $('place-icon').innerHTML = icon('pin', { size: 18, stroke: 2 });
   $('details-chevron').innerHTML = icon('chevron', { size: 26 });
   $('ptr').innerHTML = icon('refresh', { size: 18, stroke: 2.25 });

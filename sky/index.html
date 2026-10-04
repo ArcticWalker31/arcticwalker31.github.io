@@ -19,6 +19,11 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
 
+  <!-- Apply the saved color scheme before first paint (no flash). -->
+  <script>
+    try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('sky.theme')) || 'classic'; }
+    catch (e) { document.documentElement.dataset.theme = 'classic'; }
+  </script>
   <link rel="stylesheet" href="../shared/tokens.css">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
@@ -36,7 +41,7 @@
             <div class="place"><span id="place-icon"></span><span id="place">Finding your location…</span></div>
             <div class="cond" id="cond"></div>
           </div>
-          <button class="round-btn" id="refresh" type="button" aria-label="Refresh"></button>
+          <button class="round-btn" id="open-settings" type="button" aria-label="Settings"></button>
         </div>
         <div class="updated" id="updated" aria-live="polite"></div>
       </div>
@@ -91,5 +96,22 @@
       </footer>
     </main>
   </div>
+
+  <!-- ===== Settings ===== -->
+  <dialog class="settings" id="settings" aria-labelledby="settings-title">
+    <div class="settings-body">
+      <div class="settings-head">
+        <h2 id="settings-title">Settings</h2>
+        <button class="icon-btn" id="close-settings" type="button" aria-label="Close"></button>
+      </div>
+
+      <h3>Color scheme</h3>
+      <div class="themes" id="themes" role="radiogroup" aria-label="Color scheme"></div>
+
+      <h3>Forecast</h3>
+      <button class="wide-btn" id="refresh" type="button"><span id="refresh-icon"></span><span id="refresh-label">Refresh now</span></button>
+      <p class="fine">Tip: you can also pull down on the main screen to refresh.</p>
+    </div>
+  </dialog>
 </body>
 </html>

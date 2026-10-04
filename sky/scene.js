@@ -41,7 +41,67 @@ export function pickPalette(phase, kind) {
   return PALETTES[kind] ? kind : 'cloudy';
 }
 
-export const paletteColors = (name) => PALETTES[name];
+// ---------------------------------------------------------------------------
+// Color schemes. Each scheme defines a clear DAY and clear NIGHT look; every
+// other weather/time palette is derived by blending the scheme toward the
+// classic palette for that condition, so rain still looks rainy and dusk
+// still looks like dusk in every scheme. `weight` = how much of the classic
+// condition color to blend in.
+// ---------------------------------------------------------------------------
+
+export const THEMES = {
+  classic: { name: 'Classic' },
+  meadow: {
+    name: 'Meadow',
+    day:   { top: '#3C9BE0', bottom: '#BDE5F7', far: '#9CCB86', mid: '#79B36A', near: '#5A9A55', tree: '#3F7A45', cloud: '#FFFFFF', body: '#FFF4C9' },
+    night: { top: '#0E1B2C', bottom: '#22384A', far: '#1F3A2E', mid: '#183024', near: '#11241B', tree: '#0B1912', cloud: '#55687A', body: '#F4F1E2' },
+  },
+  earthy: {
+    name: 'Earthy',
+    day:   { top: '#7C8DAB', bottom: '#EFE6CC', far: '#A9BC92', mid: '#86A67E', near: '#60935D', tree: '#493B2A', cloud: '#FEFFEA', body: '#F6C27A' },
+    night: { top: '#1D1A24', bottom: '#3A3240', far: '#3A3A2E', mid: '#2E2D24', near: '#22211A', tree: '#17150F', cloud: '#5E5A66', body: '#FEFFEA' },
+  },
+  pastel: {
+    name: 'Pastel',
+    day:   { top: '#8E8CD8', bottom: '#F7C9CC', far: '#CDB0DC', mid: '#AD90CC', near: '#8F74B8', tree: '#6F589C', cloud: '#FFF6F8', body: '#FFE9B8' },
+    night: { top: '#1E1A3A', bottom: '#45386A', far: '#3B315E', mid: '#2F284E', near: '#231E3D', tree: '#18142C', cloud: '#6D6292', body: '#FFF3DC' },
+  },
+  ocean: {
+    name: 'Ocean',
+    day:   { top: '#0F7C8C', bottom: '#86D9D2', far: '#52B5AB', mid: '#2F978B', near: '#1C786C', tree: '#135C54', cloud: '#F0FFFD', body: '#FFF3C4' },
+    night: { top: '#061C24', bottom: '#12394A', far: '#0F3540', mid: '#0B2A33', near: '#082028', tree: '#05161C', cloud: '#3F6672', body: '#E8F4F2' },
+  },
+  mono: {
+    name: 'Mono',
+    gray: true, // weather variants are blended in grayscale
+    day:   { top: '#4A4F57', bottom: '#B9BDC3', far: '#8D9198', mid: '#6E737B', near: '#50555D', tree: '#33373D', cloud: '#F2F3F5', body: '#FFFFFF' },
+    night: { top: '#0E0F11', bottom: '#2A2C30', far: '#26282C', mid: '#1C1E21', near: '#141518', tree: '#0B0C0E', cloud: '#55585E', body: '#F2F2F2' },
+  },
+};
+
+const WEIGHT = { clear: 0, partly: 0.12, cloudy: 0.55, rain: 0.7, storm: 0.8, snow: 0.75, fog: 0.7, dawn: 0.6, dusk: 0.6, night: 0, nightCloudy: 0.5, nightSnow: 0.6 };
+
+const hexToRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const rgbToHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+const mixHex = (a, b, w) => { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A.map((v, i) => v + (B[i] - v) * w)); };
+const grayHex = (h) => { const [r, g, b] = hexToRgb(h); const y = 0.299 * r + 0.587 * g + 0.114 * b; return rgbToHex([y, y, y]); };
+
+/** Final colors for a palette name ('clear', 'rain', 'night', …) in a scheme. */
+export function paletteColors(name, themeId = 'classic') {
+  const classic = PALETTES[name];
+  const theme = THEMES[themeId];
+  if (!theme?.day) return classic;
+  const isNight = name.startsWith('night');
+  const base = isNight ? theme.night : theme.day;
+  const w = WEIGHT[name] ?? 0.6;
+  const out = {};
+  for (const k of Object.keys(classic)) {
+    const target = theme.gray ? grayHex(classic[k]) : classic[k];
+    // The sun/moon keeps the scheme's own color.
+    out[k] = k === 'body' ? base.body : mixHex(base[k], target, w);
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Static landscape geometry (viewBox 400×300, bottom-anchored).
@@ -160,8 +220,10 @@ export function createScene(root) {
     if (showSun) {
       // Follow the real sun: left at sunrise, high at noon, right at sunset.
       const p = clamp(sunPos ?? 0.5, 0, 1);
-      const x = 110 + 180 * p;
-      const y = 150 - Math.sin(Math.PI * p) * 105;
+      // Stays in the right-hand sky so its glow never sits behind the
+      // temperature and place name on the left.
+      const x = 262 + 38 * p;
+      const y = 158 - Math.sin(Math.PI * p) * 82;
       const g = el('g', { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, class: kind === 'cloudy' ? 'sun dim' : 'sun' }, bodyG);
       el('polygon', { points: wavyCircle(46, 9, 3.5), class: 'halo halo-2' }, g);
       el('polygon', { points: wavyCircle(36, 8, 3), class: 'halo halo-1' }, g);
@@ -352,7 +414,7 @@ export function createScene(root) {
   // ----- Public API -----
   function update(next) {
     state = next;
-    const pal = PALETTES[pickPalette(next.phase, next.kind)];
+    const pal = paletteColors(pickPalette(next.phase, next.kind), next.theme);
     const s = root.style;
     s.setProperty('--sky-top', pal.top);
     s.setProperty('--sky-bottom', pal.bottom);

@@ -25,7 +25,13 @@ export async function placeName(lat, lon) {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Place lookup failed');
   const j = await res.json();
-  const name = j.city || j.locality || j.principalSubdivision || '';
+  // In the US, `city`/`locality` are often census subdivisions ("District
+  // A-01"). Prefer the incorporated town/city (admin level 8), then a real
+  // locality, then the county.
+  const admin = j.localityInfo?.administrative ?? [];
+  const level = (n) => admin.find((a) => a.adminLevel === n)?.name;
+  const usable = (s) => s && !/\bdistrict\b/i.test(s) && !/\d/.test(s);
+  const name = [level(8), j.locality, j.city, level(7), level(6), j.principalSubdivision].find(usable) || '';
   const state = (j.principalSubdivisionCode || '').replace(/^US-/, '');
   return name ? (state && state !== name ? `${name}, ${state}` : name) : null;
 }
