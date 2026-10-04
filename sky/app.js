@@ -164,7 +164,10 @@ function renderUpdated() {
 }
 
 function renderRain(f) {
-  const { text, slots } = W.nearTermPrecip(f);
+  const { text, wet, slots } = W.nearTermPrecip(f);
+  // Only show the section when rain/snow is actually expected.
+  $('rain-section').hidden = !wet;
+  if (!wet) return;
   $('rain-summary').textContent = text;
   const max = Math.max(0.2, ...slots.map((s) => s.rate));
   const bars = slots.map((s) => {

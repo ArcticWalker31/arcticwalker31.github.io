@@ -285,7 +285,8 @@ export function pressureTrend(forecast) {
 
 /**
  * Summary for the next-2-hours strip from 15-minute precipitation.
- * Returns { text, slots: [{ time, rate }] } where rate is inches/hour.
+ * Returns { text, wet, slots: [{ time, rate }] } where rate is inches/hour
+ * and `wet` says whether any precipitation is expected in the window.
  */
 export function nearTermPrecip(forecast) {
   const now = localNow(forecast.utcOffset);
@@ -296,7 +297,7 @@ export function nearTermPrecip(forecast) {
   const WET = 0.01; // in/hr — below this it's not worth mentioning
   const kind = describe(forecast.current.code).kind;
   const word = kind === 'snow' ? 'Snow' : kind === 'sleet' ? 'Sleet' : 'Rain';
-  if (!slots.length) return { text: 'No short-term data right now', slots };
+  if (!slots.length) return { text: 'No short-term data right now', wet: false, slots };
 
   const wetNow = slots[0].rate >= WET;
   const change = slots.findIndex((s) => (s.rate >= WET) !== wetNow);
@@ -307,5 +308,5 @@ export function nearTermPrecip(forecast) {
   else if (wetNow) text = `${word} ending in about ${mins(change)} min`;
   else if (change === -1) text = `No ${word.toLowerCase()} expected in the next 2 hours`;
   else text = `${intensity(slots[change].rate)} ${word.toLowerCase()} starting in about ${mins(change)} min`;
-  return { text, slots };
+  return { text, wet: slots.some((s) => s.rate >= WET), slots };
 }
