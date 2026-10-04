@@ -40,6 +40,7 @@
     <main class="panel" id="panel-bus" data-tab="bus">
       <div class="segmented" role="radiogroup" aria-label="Bus view">
         <button type="button" role="radio" data-view="stops" aria-checked="true"><span data-icon="list"></span>Stops</button>
+        <button type="button" role="radio" data-view="trip" aria-checked="false"><span data-icon="route"></span>Directions</button>
         <button type="button" role="radio" data-view="map" aria-checked="false"><span data-icon="map"></span>Map</button>
       </div>
       <div id="bus-stops">
@@ -60,7 +61,25 @@
           <div id="near-stops"></div>
         </section>
       </div>
+      <!-- Directions: "CID to McComas" -->
+      <div id="bus-trip" hidden>
+        <form class="card trip-form" id="trip-form" autocomplete="off">
+          <div class="trip-fields">
+            <label class="trip-field"><span class="pin from" aria-hidden="true"></span>
+              <input id="trip-from" type="text" placeholder="From (e.g. CID, or “CID to McComas”)" aria-label="From" enterkeyhint="next"></label>
+            <label class="trip-field"><span class="pin to" aria-hidden="true"></span>
+              <input id="trip-to" type="text" placeholder="To (e.g. McComas)" aria-label="To" enterkeyhint="go"></label>
+          </div>
+          <button class="icon-btn swap" id="trip-swap" type="button" aria-label="Swap from and to"></button>
+          <ul class="suggest" id="trip-suggest" role="listbox" hidden></ul>
+        </form>
+        <div class="chips-row" id="saved-chips"></div>
+        <button class="btn wide" id="trip-go" type="button">Get directions</button>
+        <div id="trip-results"></div>
+      </div>
+
       <div class="map-wrap" id="bus-map-wrap" hidden>
+        <div class="map-trip" id="map-trip" hidden><span id="map-trip-label"></span><button type="button" id="map-trip-clear" aria-label="Clear trip"></button></div>
         <div id="bus-map"></div>
         <button class="map-locate" id="map-locate" type="button" aria-label="Center on me"></button>
       </div>
@@ -110,6 +129,19 @@
 
       <h3>Color scheme</h3>
       <div class="themes" id="themes" role="radiogroup" aria-label="Color scheme"></div>
+
+      <h3>Saved places</h3>
+      <p class="fine">Nicknames you can type or tap in Directions, like “Home” or “Gym”.</p>
+      <ul class="saved-list" id="saved-list"></ul>
+      <div class="saved-add">
+        <input id="save-nick" type="text" placeholder="Nickname (e.g. Home)" maxlength="20">
+        <div class="saved-place">
+          <input id="save-place" type="text" placeholder="Place (e.g. CID)" autocomplete="off">
+          <ul class="suggest" id="save-suggest" role="listbox" hidden></ul>
+        </div>
+        <button class="btn" id="save-add" type="button">Add</button>
+      </div>
+      <p class="msg" id="save-msg" role="status"></p>
 
       <h3>Bus relay</h3>
       <p class="fine">The address of your Cloudflare Worker (see the Campus README). Used for bus times and gym hours.</p>

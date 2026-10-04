@@ -1,7 +1,8 @@
 // worker.js — Cloudflare Worker relay for the Campus app.
 //
-// Blacksburg Transit (ridebt.org) and the RecSports hours feed don't allow
-// browser requests from other sites (no CORS headers). This tiny relay
+// Blacksburg Transit (ridebt.org + its BT4U web service) and the RecSports
+// hours feed don't allow browser requests from other sites (no CORS
+// headers). This tiny relay
 // fetches them server-side and adds the header. It ONLY forwards to the
 // allow-listed URLs below and only answers your own site, so it can't be
 // used as an open proxy.
@@ -12,6 +13,7 @@
 const ALLOWED_TARGETS = [
   'https://ridebt.org/index.php?option=com_ajax&module=bt_map&',
   'https://apps.students.vt.edu/rshours/Api/NonRestricted/',
+  'https://www.bt4uclassic.org/webservices/bt4u_webservice.asmx/', // trip times & places (directions)
 ];
 
 const ALLOWED_ORIGINS = [

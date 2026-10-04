@@ -5,6 +5,8 @@ import { store, hasRelay, getRelay, NeedsRelay, clock, inTime, distanceM, fmtDis
 import * as BT from './bt.js';
 import * as Gym from './gym.js';
 import { getDining } from './dining.js';
+import * as BTU from './bt4u.js';
+import { planDirect, stopsNear, candidateRoutes, searchPlaces, splitTrip } from './planner.js';
 import { icon } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
@@ -102,6 +104,7 @@ async function refreshBus() {
   try {
     await ensureStops();
     if (busView === 'map') return await refreshMap();
+    if (busView === 'trip') return; // directions are planned on demand
 
     // Where are we? (for "Nearby"). Failure just hides the section.
     position = await getPosition().catch(() => position);
@@ -369,7 +372,7 @@ async function refreshMap() {
       pitchWithRotate: false,
     });
     map.touchZoomRotate.disableRotation();
-    map.on('style.load', addRouteLayers);
+    map.on('style.load', () => { addRouteLayers(); addTripLayers(); });
     darkQuery.addEventListener?.('change', () => map.setStyle(MAP_STYLES[darkQuery.matches ? 'dark' : 'light']));
 
     for (const code of favorites) {
@@ -395,6 +398,7 @@ async function refreshMap() {
   }
   map.resize();
   requestAnimationFrame(() => map.resize()); // after the container is laid out
+  if (tripOnMap && !tripData) drawTrip();
 
   const buses = await BT.getBuses();
   const seen = new Set();
@@ -429,9 +433,285 @@ function setBusView(view, { go = true } = {}) {
   store.set('busView', view);
   for (const b of document.querySelectorAll('.segmented button')) b.setAttribute('aria-checked', String(b.dataset.view === view));
   $('bus-stops').hidden = view !== 'stops';
+  $('bus-trip').hidden = view !== 'trip';
   $('bus-map-wrap').hidden = view !== 'map' || !hasRelay();
   if (view === 'map' && !hasRelay()) $('bus-stops').hidden = false;
   if (go) refresh();
+}
+
+// ---------------------------------------------------------------------------
+// Directions (direct buses only): "CID to McComas"
+// ---------------------------------------------------------------------------
+
+let places = [];
+let saved = store.get('savedPlaces', []); // [{ nickname, place: { name, lat, lon } }]
+const tripSel = { from: null, to: null };  // place picked from suggestions (null = resolve from text)
+let activeField = 'from';
+let lastPlan = null;                        // { from, to, plan }
+let tripOnMap = null;                       // { from, to, option|null } drawn on the map
+let tripData = null;                        // its GeoJSON (re-applied after map style changes)
+
+async function ensurePlaces() {
+  if (!places.length) places = await BTU.getPlaces();
+  return places;
+}
+
+/** Place autocomplete under an input; saved nicknames come first. */
+function attachSuggest(input, list, onPick) {
+  let items = [];
+  const show = () => {
+    items = searchPlaces(input.value, places, saved, 6);
+    list.innerHTML = items.map((p, i) => `<li><button type="button" data-i="${i}">${p.nickname ? `<b>${esc(p.nickname)}</b> · ` : ''}${esc(p.name)}</button></li>`).join('');
+    list.hidden = !items.length || document.activeElement !== input;
+  };
+  input.addEventListener('focus', async () => {
+    try { await ensurePlaces(); } catch { /* relay missing: no suggestions */ }
+    show();
+  });
+  input.addEventListener('input', show);
+  input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 150));
+  // pointerdown (not click) so the pick lands before the input blurs
+  list.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-i]');
+    if (!b || document.activeElement !== input) return;
+    e.preventDefault();
+    const p = items[Number(b.dataset.i)];
+    input.value = p.nickname || p.name;
+    list.hidden = true;
+    onPick(p);
+  });
+}
+
+const resolvePlace = (picked, text) => picked || searchPlaces(text, places, saved, 1)[0] || null;
+
+async function planTrip() {
+  const out = $('trip-results');
+  if (!hasRelay()) {
+    out.innerHTML = '<p class="empty">Directions need the bus relay (⚙ Settings).</p>';
+    return;
+  }
+  let fromText = $('trip-from').value.trim();
+  let toText = $('trip-to').value.trim();
+  const split = !toText && splitTrip(fromText); // "CID to McComas" typed in one box
+  if (split) {
+    [fromText, toText] = split;
+    $('trip-from').value = fromText;
+    $('trip-to').value = toText;
+    tripSel.from = tripSel.to = null;
+  }
+  if (!fromText || !toText) {
+    out.innerHTML = '<p class="empty">Enter where you’re starting and where you’re going.</p>';
+    return;
+  }
+  out.innerHTML = '<p class="empty">Finding buses…</p>';
+  try {
+    await Promise.all([ensurePlaces(), ensureStops()]);
+    const from = resolvePlace(tripSel.from, fromText);
+    const to = resolvePlace(tripSel.to, toText);
+    if (!from || !to) {
+      out.innerHTML = `<p class="empty">Couldn’t find “${esc(!from ? fromText : toText)}”. Try a building name, or save it as a place in Settings.</p>`;
+      return;
+    }
+    store.set('lastTrip', { fromText, toText });
+    const routeCodes = candidateRoutes(stopsNear(from, stops), stopsNear(to, stops));
+    const trips = (await Promise.all(routeCodes.map((r) => BTU.getTrips(r).catch((err) => {
+      if (/403/.test(err.message)) throw err; // relay needs the update
+      return [];
+    })))).flat();
+    renderTrip(from, to, planDirect({ from, to, stops, trips }));
+  } catch (err) {
+    out.innerHTML = /403/.test(err.message)
+      ? '<div class="setup"><h2>Update your relay</h2><p>Directions use one more BT service. In Cloudflare, open campus-relay → Edit code, replace it with the latest <a href="worker/worker.js" target="_blank" rel="noopener">worker.js</a>, and Deploy.</p></div>'
+      : `<p class="empty">Couldn’t plan the trip (${esc(err.message)}).</p>`;
+  }
+}
+
+function renderTrip(from, to, plan) {
+  lastPlan = { from, to, plan };
+  const now = Date.now();
+  const minsTo = (d) => Math.max(0, Math.round((d - now) / 60000));
+  const t = (d) => clock(d, { short: false });
+  const label = (p) => esc(p.nickname || p.name);
+
+  const busCard = (o, i) => {
+    const leaveIn = minsTo(o.leave);
+    return `<div class="card trip-opt">
+      <div class="opt-head">
+        <div><div class="opt-arrive">Arrive ${t(o.arrive)}</div>
+          <div class="opt-sub">${leaveIn <= 0 ? 'Leave now' : `Leave in ${leaveIn} min · ${t(o.leave)}`}</div></div>
+        <div class="opt-total">${minsTo(o.arrive)} min</div>
+      </div>
+      <div class="opt-strip">${icon('walk', { size: 16 })}<span>${o.board.walk}</span><i>›</i>${routeChip(o.route)}<span>${o.rideMin}</span><i>›</i>${icon('walk', { size: 16 })}<span>${o.alight.walk}</span></div>
+      <ol class="opt-steps">
+        <li>${icon('walk', { size: 18 })}<span>Walk ${o.board.walk} min to <b>${esc(o.board.stop.name)}</b> <small>Stop ${esc(o.board.stop.code)}</small></span></li>
+        <li>${routeChip(o.route)}<span>Take <b>${esc(routes[o.route]?.name || o.route)}</b> at ${t(o.board.at)} <small>in ${inTime(Math.max(0, o.board.at - now))}</small><br>
+          Ride ${o.stopsRidden} stop${o.stopsRidden === 1 ? '' : 's'} (${o.rideMin} min), get off at <b>${esc(o.alight.stop.name)}</b></span></li>
+        <li>${icon('walk', { size: 18 })}<span>Walk ${o.alight.walk} min to <b>${label(to)}</b></span></li>
+      </ol>
+      <button class="btn small" type="button" data-show-trip="${i}">${icon('map', { size: 16 })}Show on map</button>
+    </div>`;
+  };
+  const walkCard = (fastest) => `<div class="card trip-opt">
+      <div class="opt-head">
+        <div><div class="opt-arrive">Arrive ${t(plan.walkArrive)}</div><div class="opt-sub">${fastest ? 'Walking is fastest' : 'Walk the whole way'}</div></div>
+        <div class="opt-total">${plan.walkOnly} min</div>
+      </div>
+      <div class="opt-strip">${icon('walk', { size: 16 })}<span>Walk ${fmtDistance(distanceM(from, to) * 1.25)}</span></div>
+      <button class="btn small" type="button" data-show-trip="walk">${icon('map', { size: 16 })}Show on map</button>
+    </div>`;
+
+  let body;
+  if (plan.options.length) body = plan.options.map(busCard).join('') + walkCard(false);
+  else {
+    const why = plan.anyBus ? 'Walking beats every bus right now.' : 'No direct bus connects these places right now.';
+    body = `<p class="empty">${why}</p>${walkCard(true)}`;
+  }
+  $('trip-results').innerHTML = `<p class="trip-head">${label(from)} → ${label(to)}</p>${body}`;
+}
+
+/** Saved places: the Settings list and the quick chips in Directions. */
+function renderSaved() {
+  $('saved-list').innerHTML = saved.length
+    ? saved.map((s, i) => `<li><span><b>${esc(s.nickname)}</b><small>${esc(s.place.name)}</small></span>
+        <button class="icon-btn" type="button" data-del-place="${i}" aria-label="Delete ${esc(s.nickname)}">${icon('trash', { size: 18 })}</button></li>`).join('')
+    : '<li class="fine">No saved places yet.</li>';
+  $('saved-chips').innerHTML = saved.map((s, i) => `<button class="chip" type="button" data-chip="${i}">${esc(s.nickname)}</button>`).join('');
+}
+
+let savePick = null;
+async function addSavedPlace() {
+  const nickname = $('save-nick').value.trim();
+  const text = $('save-place').value.trim();
+  const msg = $('save-msg');
+  if (!nickname || !text) { msg.textContent = 'Enter a nickname and a place.'; msg.className = 'msg error'; return; }
+  try { await ensurePlaces(); } catch { msg.textContent = 'Set up the bus relay first.'; msg.className = 'msg error'; return; }
+  const place = savePick || searchPlaces(text, places, [], 1)[0];
+  if (!place) { msg.textContent = `Couldn’t find “${text}”.`; msg.className = 'msg error'; return; }
+  saved = [...saved.filter((s) => s.nickname.toLowerCase() !== nickname.toLowerCase()),
+    { nickname, place: { name: place.name, lat: place.lat, lon: place.lon } }];
+  store.set('savedPlaces', saved);
+  $('save-nick').value = '';
+  $('save-place').value = '';
+  savePick = null;
+  msg.textContent = `Saved “${nickname}” → ${place.name}`;
+  msg.className = 'msg ok';
+  renderSaved();
+}
+
+// ----- Trip on the map -----
+
+function addTripLayers() {
+  if (map.getSource('trip')) return;
+  map.addSource('trip', { type: 'geojson', data: tripData || EMPTY });
+  const line = { 'line-cap': 'round', 'line-join': 'round' };
+  map.addLayer({ id: 'trip-walk', type: 'line', source: 'trip', filter: ['==', ['get', 'part'], 'walk'],
+    layout: line, paint: { 'line-color': '#7A8290', 'line-width': 5, 'line-dasharray': [0.1, 1.8] } });
+  map.addLayer({ id: 'trip-bus-casing', type: 'line', source: 'trip', filter: ['==', ['get', 'part'], 'bus'],
+    layout: line, paint: { 'line-color': '#FFFFFF', 'line-width': 11 } });
+  map.addLayer({ id: 'trip-bus', type: 'line', source: 'trip', filter: ['==', ['get', 'part'], 'bus'],
+    layout: line, paint: { 'line-color': ['get', 'color'], 'line-width': 7 } });
+  map.addLayer({ id: 'trip-stops', type: 'circle', source: 'trip', filter: ['==', ['get', 'part'], 'stop'],
+    paint: { 'circle-radius': 6, 'circle-color': '#FFFFFF', 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 3 } });
+  map.addLayer({ id: 'trip-ends', type: 'circle', source: 'trip', filter: ['==', ['get', 'part'], 'end'],
+    paint: { 'circle-radius': 8, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 } });
+}
+
+async function drawTrip() {
+  if (!map || !tripOnMap) return;
+  const { from, to, option } = tripOnMap;
+  const ll = (p) => [p.lon, p.lat];
+  const line = (part, coords, color = '#7A8290') => ({ type: 'Feature', properties: { part, color }, geometry: { type: 'LineString', coordinates: coords } });
+  const point = (part, p, color) => ({ type: 'Feature', properties: { part, color }, geometry: { type: 'Point', coordinates: ll(p) } });
+  const features = [];
+  if (option) {
+    const color = (routes[option.route] || { color: '#444' }).color;
+    let busLine = [ll(option.board.stop), ll(option.alight.stop)];
+    try {
+      const path = await BT.getPatternPath(option.pattern);
+      const i = path.findIndex((p) => p.code === option.board.stop.code);
+      const j = path.findIndex((p, k) => k > i && p.code === option.alight.stop.code);
+      if (i >= 0 && j > i) busLine = path.slice(i, j + 1).map(ll);
+    } catch { /* straight line fallback */ }
+    features.push(line('walk', [ll(from), ll(option.board.stop)]));
+    features.push(line('bus', busLine, color));
+    features.push(line('walk', [ll(option.alight.stop), ll(to)]));
+    features.push(point('stop', option.board.stop, color), point('stop', option.alight.stop, color));
+  } else {
+    features.push(line('walk', [ll(from), ll(to)]));
+  }
+  features.push(point('end', from, '#34A853'), point('end', to, '#EA4335'));
+  tripData = { type: 'FeatureCollection', features };
+  map.getSource('trip')?.setData(tripData);
+
+  const coords = features.flatMap((f) => (f.geometry.type === 'Point' ? [f.geometry.coordinates] : f.geometry.coordinates));
+  const lons = coords.map((c) => c[0]), lats = coords.map((c) => c[1]);
+  map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 60, maxZoom: 17, duration: 600 });
+  $('map-trip-label').textContent = `${from.nickname || from.name} → ${to.nickname || to.name}`;
+  $('map-trip').hidden = false;
+}
+
+function clearTrip() {
+  tripOnMap = null;
+  tripData = null;
+  map?.getSource('trip')?.setData(EMPTY);
+  $('map-trip').hidden = true;
+}
+
+function showTripOnMap(which) {
+  if (!lastPlan) return;
+  const option = which === 'walk' ? null : lastPlan.plan.options[Number(which)];
+  tripOnMap = { from: lastPlan.from, to: lastPlan.to, option };
+  tripData = null;
+  setBusView('map'); // refreshMap() draws it once the map is ready
+}
+
+function initDirections() {
+  const from = $('trip-from'), to = $('trip-to'), list = $('trip-suggest');
+  attachSuggest(from, list, (p) => { tripSel.from = p; to.focus(); });
+  attachSuggest(to, list, (p) => { tripSel.to = p; });
+  from.addEventListener('input', () => { tripSel.from = null; });
+  to.addEventListener('input', () => { tripSel.to = null; });
+  from.addEventListener('focus', () => { activeField = 'from'; });
+  to.addEventListener('focus', () => { activeField = 'to'; });
+  from.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); splitTrip(from.value) ? planTrip() : to.focus(); } });
+  to.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); to.blur(); planTrip(); } });
+  $('trip-form').addEventListener('submit', (e) => e.preventDefault());
+  $('trip-go').addEventListener('click', planTrip);
+  $('trip-swap').addEventListener('click', () => {
+    [from.value, to.value] = [to.value, from.value];
+    [tripSel.from, tripSel.to] = [tripSel.to, tripSel.from];
+  });
+  // Saved-place chips fill the field you were in (or the first empty one).
+  $('saved-chips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-chip]');
+    if (!b) return;
+    const s = saved[Number(b.dataset.chip)];
+    const field = activeField === 'to' || (from.value && !to.value) ? 'to' : 'from';
+    $(`trip-${field}`).value = s.nickname;
+    tripSel[field] = { ...s.place, nickname: s.nickname };
+    activeField = field === 'from' ? 'to' : 'from';
+  });
+  $('trip-results').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-show-trip]');
+    if (b) showTripOnMap(b.dataset.showTrip);
+  });
+  $('map-trip-clear').addEventListener('click', clearTrip);
+
+  // Settings: saved places
+  attachSuggest($('save-place'), $('save-suggest'), (p) => { savePick = p; });
+  $('save-place').addEventListener('input', () => { savePick = null; });
+  $('save-add').addEventListener('click', addSavedPlace);
+  $('saved-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-del-place]');
+    if (!b) return;
+    saved = saved.filter((_, i) => i !== Number(b.dataset.delPlace));
+    store.set('savedPlaces', saved);
+    renderSaved();
+  });
+
+  const last = store.get('lastTrip');
+  if (last) { from.value = last.fromText; to.value = last.toText; }
+  renderSaved();
 }
 
 // ---------------------------------------------------------------------------
@@ -578,6 +858,9 @@ function init() {
   $('open-settings').innerHTML = icon('settings');
   for (const b of document.querySelectorAll('[data-close]')) b.innerHTML = icon('close', { size: 20 });
   $('map-locate').innerHTML = icon('locate', { size: 20 });
+  $('trip-swap').innerHTML = icon('swap', { size: 18 });
+  $('map-trip-clear').innerHTML = icon('close', { size: 16 });
+  initDirections();
 
   // Tabs
   for (const b of document.querySelectorAll('.tabbar button')) b.addEventListener('click', () => showTab(b.dataset.tab));

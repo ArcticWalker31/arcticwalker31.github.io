@@ -16,6 +16,10 @@ const PATHS = {
   locate: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  walk: '<circle cx="13" cy="4" r="2"/><path d="m7 21 3-6 3 3v3M9.5 12.5 11 8l4 3 3 1M8 10l3-2"/>',
+  swap: '<path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"/>',
+  trash: '<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
 };
 
 export function icon(name, { size = 22, stroke = 2, fill = 'none', cls = '' } = {}) {
