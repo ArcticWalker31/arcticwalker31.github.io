@@ -7,6 +7,7 @@ My personal web apps, all hosted from this one repo on GitHub Pages. Each app is
 | Launcher | https://arcticwalker31.github.io/ |
 | [Habits](habits/README.md) | https://arcticwalker31.github.io/habits/ (stats: `/habits/dashboard.html`) |
 | [Sky](sky/README.md) | https://arcticwalker31.github.io/sky/ (weather) |
+| [Campus](campus/README.md) | https://arcticwalker31.github.io/campus/ (BT buses, gym crowds, dining hours) |
 
 Plain HTML/CSS/JS everywhere: no build step, no npm.
 
@@ -19,6 +20,7 @@ shared/
   tokens.css      site-wide colors for light and dark mode
 habits/           the habit tracker (its own README)
 sky/              the weather app (its own README)
+campus/           VT buses, gym and dining (its own README)
 _template/        copy this to start a new app
 tools/
   make-icons.ps1  generates letter icons for a new app
