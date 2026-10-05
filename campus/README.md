@@ -6,7 +6,7 @@ Virginia Tech at a glance: Blacksburg Transit buses, gym crowd levels and dining
 |---|---|---|
 | **Bus** | Saved stops and the 3 nearest stops (GPS) with the next buses; **Directions** (“CID to McComas”); a live map of every running bus and how full it is | Blacksburg Transit's live data (the same feed ridebt.org's map uses), **through your relay** |
 | **Gym** | Live % full for War Memorial Hall, McComas Hall and the Bouldering Wall, plus today's hours | RecSports occupancy page (direct); hours from the RecSports hours feed **through your relay** |
-| **Dining** | Every dining spot open today: open now / later / closed, hours, "closes in 25 min" warnings, menu links | VT's official hours feed (direct) |
+| **Dining** | Grouped by hall (Turner Place, West End, Perry Place, Owens, Squires, Dietrick…): each hall card shows how many spots are open and until when; tap to see each spot's hours, "closes in 25 min" warnings and menu links. Order: nearest first or A–Z (Settings) | VT's official hours feed (direct) |
 
 Dining and gym crowd levels work without any setup. Bus times, the map and gym hours need the relay.
 

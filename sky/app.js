@@ -6,6 +6,7 @@ import { getPosition, placeName, distanceKm, locationErrorText } from './geo.js'
 import { createScene, THEMES, paletteColors } from './scene.js';
 import { hourlyChart } from './chart.js';
 import { icon } from './icons.js';
+import { openDaySheet, updateDaySheet, tempColor } from './daysheet.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,7 +27,6 @@ const PLACE_V = 2;                // bump when placeName() logic changes, to ref
 
 let mode = store.get('mode', 'temp');
 let theme = THEMES[store.get('theme')] ? store.get('theme') : 'classic';
-let expandedDay = null;
 let busy = false;
 let status = { offline: false, usingLast: false, error: '' };
 const scene = createScene($('scene'));
@@ -141,6 +141,7 @@ function render() {
   renderDetails(f, now);
   renderHourly(f);
   renderDays(f, now);
+  updateDaySheet(f); // keep an open day view current after a refresh
   $('credits').hidden = false;
 }
 
@@ -230,20 +231,6 @@ function renderHourly(f) {
   box.scrollLeft = scrollLeft;
 }
 
-// Temperature → color for the 10-day range bars (cold blue → warm orange).
-const TEMP_STOPS = [[0, [108, 142, 232]], [32, [95, 168, 224]], [55, [120, 190, 160]], [70, [242, 181, 68]], [90, [226, 112, 58]], [105, [200, 60, 50]]];
-function tempColor(t) {
-  for (let i = 1; i < TEMP_STOPS.length; i++) {
-    const [t1, c1] = TEMP_STOPS[i];
-    const [t0, c0] = TEMP_STOPS[i - 1];
-    if (t <= t1) {
-      const k = Math.max(0, (t - t0) / (t1 - t0));
-      return `rgb(${c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(',')})`;
-    }
-  }
-  return 'rgb(200,60,50)';
-}
-
 function renderDays(f, now) {
   const today = W.localNow(f.utcOffset).slice(0, 10);
   const days = f.daily.filter((d) => d.date >= today).slice(0, 10);
@@ -254,12 +241,11 @@ function renderDays(f, now) {
   $('days').replaceChildren(...days.map((d, i) => {
     const li = document.createElement('li');
     li.className = 'day';
-    const open = expandedDay === d.date;
     const name = i === 0 ? 'Today' : W.weekday(d.date);
     const prob = d.prob >= 10 ? `${d.prob}%` : '';
     const dot = i === 0 ? `<span class="now-dot" style="left:${pct(Math.min(Math.max(now.temp, d.lo), d.hi))}%"></span>` : '';
     li.innerHTML = `
-      <button class="day-row" type="button" aria-expanded="${open}">
+      <button class="day-row" type="button" aria-haspopup="dialog">
         <span class="day-name">${name}</span>
         ${icon(W.iconFor(d.code, true), { size: 24, label: W.describe(d.code).label })}
         <span class="day-prob">${prob}</span>
@@ -267,44 +253,9 @@ function renderDays(f, now) {
         <span class="range"><span class="fill" style="left:${pct(d.lo)}%;right:${100 - pct(d.hi)}%;background:linear-gradient(90deg, ${tempColor(d.lo)}, ${tempColor(d.hi)})"></span>${dot}</span>
         <span class="day-hi">${Math.round(d.hi)}°</span>
       </button>`;
-    li.querySelector('.day-row').addEventListener('click', () => {
-      expandedDay = open ? null : d.date;
-      renderDays(f, now);
-    });
-    if (open) li.append(dayDetails(f, d));
+    li.querySelector('.day-row').addEventListener('click', () => openDaySheet(f, d.date));
     return li;
   }));
-}
-
-function dayDetails(f, d) {
-  const box = document.createElement('div');
-  box.className = 'day-more';
-  const hours = f.hourly.filter((h) => h.time.startsWith(d.date));
-  const chartBox = document.createElement('div');
-  chartBox.className = 'day-chart';
-  box.append(chartBox);
-  // Size the chart to the list's width once it's in the page.
-  requestAnimationFrame(() => {
-    const width = chartBox.clientWidth || 340;
-    chartBox.replaceChildren(hourlyChart(hours, {
-      mode: 'temp', pointW: width / hours.length, every: 3, nowIndex: -1, plotH: 64,
-      ariaLabel: `${W.weekday(d.date, 'long')} hourly temperature`,
-    }));
-  });
-  const facts = document.createElement('div');
-  facts.className = 'day-facts';
-  const rows = [
-    [W.describe(d.code).label, 'Conditions'],
-    [`${d.prob ?? 0}% · ${(d.precip ?? 0).toFixed(2)}″`, 'Precipitation'],
-    [`${Math.round(d.windMax)} mph ${W.compass(d.windDir)}`, `Gusts ${Math.round(d.gustMax)} mph`],
-    [`${Math.round(d.uvMax ?? 0)} · ${W.uvLevel(d.uvMax)}`, 'Peak UV'],
-    [W.clockLabel(d.sunrise), 'Sunrise'],
-    [W.clockLabel(d.sunset), 'Sunset'],
-  ];
-  if (d.snow > 0) rows.splice(2, 0, [`${d.snow.toFixed(1)}″`, 'Snowfall']);
-  facts.innerHTML = rows.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
-  box.append(facts);
-  return box;
 }
 
 // ---------------------------------------------------------------------------

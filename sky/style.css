@@ -319,3 +319,71 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .settings .fine { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+
+/* ===================== Day view (full-screen sheet) ===================== */
+.day-sheet {
+  width: 100%; max-width: 560px; height: 100dvh; max-height: 100dvh;
+  margin: 0 auto; padding: 0; border: 0;
+  background: var(--bg); color: var(--text);
+}
+.day-sheet::backdrop { background: rgba(0, 0, 0, 0.45); }
+.day-sheet[open] { animation: ds-up 0.28s ease-out; }
+@keyframes ds-up { from { transform: translateY(32px); } }
+.ds-inner {
+  padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 18px) calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 18px);
+}
+.ds-head { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 8px; }
+.ds-close { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--surface-2); color: var(--text); }
+.ds-title { margin: 0; text-align: center; font-size: 20px; font-weight: 700; }
+.ds-metric {
+  position: relative; display: flex; align-items: center; gap: 4px;
+  padding: 0 10px; height: 40px; border-radius: 999px; background: var(--surface-2);
+}
+.ds-metric select {
+  appearance: none; -webkit-appearance: none; border: 0; background: none; color: var(--text);
+  font: inherit; font-size: 14px; font-weight: 600; padding-right: 2px; cursor: pointer; max-width: 120px;
+}
+
+.ds-days { display: flex; gap: 4px; margin: 18px -4px 0; overflow-x: auto; scrollbar-width: none; }
+.ds-days::-webkit-scrollbar { display: none; }
+.ds-days button {
+  flex: 1 0 44px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 0; border: 0; background: none; color: var(--text);
+}
+.ds-days .dow { font-size: 13px; font-weight: 600; color: var(--muted); }
+.ds-days .num { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; font-size: 19px; font-variant-numeric: tabular-nums; }
+.ds-days button[aria-selected="true"] .num { background: var(--c-precip); color: #fff; font-weight: 700; }
+#ds-swipe { touch-action: pan-y; }
+.ds-date { text-align: center; margin: 12px 0 0; font-size: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+
+.ds-readout { margin-top: 14px; min-height: 84px; }
+.ro-big { display: flex; align-items: center; gap: 10px; font-size: 52px; font-weight: 650; letter-spacing: -0.02em; line-height: 1; }
+.ro-sub { margin-top: 6px; color: var(--muted); font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.ds-chart { margin-top: 8px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.ds-svg { display: block; width: 100%; height: auto; }
+.ds-svg text { font-size: 12px; font-variant-numeric: tabular-nums; }
+.ds-axis { fill: var(--muted); }
+.ds-grid { stroke: var(--border); stroke-width: 1; }
+.ds-vgrid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
+.ds-icon { color: var(--text); }
+.ds-icon.past { opacity: 0.4; }
+.ds-line { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.ds-line.past { stroke-dasharray: 7 7; opacity: 0.55; }
+.ds-other { fill: none; stroke: var(--muted); stroke-width: 3; opacity: 0.35; stroke-linejoin: round; }
+.ds-hl { fill: var(--muted); font-weight: 700; }
+.ds-bar.precip { fill: var(--c-precip); }
+.ds-bar.uv { fill: var(--c-uv); }
+.ds-bar.past { opacity: 0.4; }
+.ds-now { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 2 3; opacity: 0.6; }
+.ds-now-dot { fill: var(--bg); stroke: var(--text); stroke-width: 2.5; }
+.ds-cursor line { stroke: var(--text); stroke-width: 1.5; }
+.ds-cursor circle { fill: var(--text); stroke: var(--bg); stroke-width: 3; }
+.ds-empty { color: var(--muted); padding: 30px 0; text-align: center; }
+
+.ds-toggle { display: flex; padding: 3px; margin-top: 12px; border-radius: 12px; background: var(--surface-2); }
+.ds-toggle button { flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: none; color: var(--text); font-weight: 600; font-size: 15px; }
+.ds-toggle button[aria-checked="true"] { background: var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.ds-desc { color: var(--muted); font-size: 15px; margin: 12px 2px 0; }
+.ds-hint { color: var(--muted); font-size: 13px; margin: 6px 2px 0; }
+.ds-facts h3 { font-size: 18px; margin: 24px 0 4px; }

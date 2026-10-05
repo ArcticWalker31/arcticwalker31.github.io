@@ -243,12 +243,26 @@ button { cursor: pointer; }
 .gym-hours b.open { color: var(--quiet); }
 .gym-hours b.closed { color: var(--muted); }
 
-/* ---------- Dining ---------- */
-.dining-group h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 22px 4px 8px; }
-.venue { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; }
+/* ---------- Dining: one collapsible card per hall ---------- */
+.hall { padding: 0; overflow: hidden; }
+.hall-head {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border: 0; background: none; text-align: left;
+}
+.hall-info { flex: 1; min-width: 0; }
+.hall-name { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 18px; }
+.hall-dist { font-weight: 500; font-size: 13px; color: var(--muted); }
+.hall-sum { display: block; font-size: 14px; font-weight: 600; margin-top: 2px; }
+.hall-sum.open { color: var(--quiet); }
+.hall-sum.later { color: var(--text); }
+.hall-sum.closed { color: var(--muted); font-weight: 500; }
+.hall .chev { color: var(--muted); transition: transform 0.2s; }
+.hall.expanded .chev { transform: rotate(180deg); }
+.venues { list-style: none; margin: 0; padding: 0 16px 6px; }
+.venue { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+.venue.is-closed { opacity: 0.55; }
 .venue .info { flex: 1; min-width: 0; }
 .venue .name { font-weight: 650; }
-.venue .bldg { font-size: 13px; color: var(--muted); }
 .venue .hours { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .venue .status { text-align: right; font-size: 14px; font-weight: 600; white-space: nowrap; }
 .venue .status.open { color: var(--quiet); }

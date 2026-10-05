@@ -85,7 +85,7 @@
 
       <section class="section" aria-labelledby="daily-title">
         <h2 id="daily-title">10-day forecast</h2>
-        <p class="sub">Tap a day for details</p>
+        <p class="sub">Tap a day for its full-day charts</p>
         <ul class="days" id="days"></ul>
       </section>
 
@@ -111,6 +111,37 @@
       <h3>Forecast</h3>
       <button class="wide-btn" id="refresh" type="button"><span id="refresh-icon"></span><span id="refresh-label">Refresh now</span></button>
       <p class="fine">Tip: you can also pull down on the main screen to refresh.</p>
+    </div>
+  </dialog>
+
+  <!-- ===== Day view (full screen) ===== -->
+  <dialog class="day-sheet" id="day-sheet" aria-labelledby="ds-title">
+    <div class="ds-inner">
+      <div class="ds-head">
+        <button class="ds-close" id="ds-close" type="button" aria-label="Close"></button>
+        <h2 class="ds-title" id="ds-title">Conditions</h2>
+        <label class="ds-metric"><span id="ds-metric-icon"></span>
+          <select id="ds-metric" aria-label="Chart">
+            <option value="temp">Temperature</option>
+            <option value="precip">Precipitation</option>
+            <option value="uv">UV Index</option>
+            <option value="humidity">Humidity</option>
+          </select>
+        </label>
+      </div>
+      <div class="ds-days" id="ds-days" role="tablist" aria-label="Day"></div>
+      <div id="ds-swipe">
+        <p class="ds-date" id="ds-date"></p>
+        <div class="ds-readout" id="ds-readout" aria-live="polite"></div>
+      </div>
+      <div class="ds-chart" id="ds-chart"></div>
+      <div class="ds-toggle" id="ds-toggle" role="radiogroup" aria-label="Temperature type">
+        <button type="button" role="radio" data-series="actual" aria-checked="true">Actual</button>
+        <button type="button" role="radio" data-series="feels" aria-checked="false">Feels Like</button>
+      </div>
+      <p class="ds-desc" id="ds-desc"></p>
+      <p class="ds-hint">Press and hold the chart to see each hour.</p>
+      <div class="ds-facts" id="ds-facts"></div>
     </div>
   </dialog>
 </body>

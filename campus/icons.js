@@ -19,6 +19,7 @@ const PATHS = {
   route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
   walk: '<circle cx="13" cy="4" r="2"/><path d="m7 21 3-6 3 3v3M9.5 12.5 11 8l4 3 3 1M8 10l3-2"/>',
   swap: '<path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
   trash: '<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
 };
 

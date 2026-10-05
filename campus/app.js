@@ -4,7 +4,7 @@
 import { store, hasRelay, getRelay, NeedsRelay, clock, inTime, distanceM, fmtDistance, getPosition, esc } from './util.js';
 import * as BT from './bt.js';
 import * as Gym from './gym.js';
-import { getDining } from './dining.js';
+import { getDining, groupByHall } from './dining.js';
 import * as BTU from './bt4u.js';
 import { planDirect, stopsNear, candidateRoutes, searchPlaces, splitTrip } from './planner.js';
 import { icon } from './icons.js';
@@ -771,46 +771,99 @@ function gymHours(facilityId, periods, now) {
 // Dining
 // ---------------------------------------------------------------------------
 
+let diningSort = store.get('diningSort', 'nearest'); // 'nearest' | 'alpha'
+let diningOpen = new Set(store.get('diningOpen', [])); // expanded hall keys
+let lastVenues = null;
+
 async function refreshDining() {
-  let venues;
   try {
-    venues = await getDining();
+    lastVenues = await getDining();
   } catch (err) {
     if (!$('dining-list').innerHTML) $('dining-list').innerHTML = `<p class="empty">Couldn’t load dining hours (${esc(err.message)}).</p>`;
     markUpdated('dining', 'Offline');
     return;
   }
-  const now = Date.now();
-  const open = venues.filter((v) => v.state === 'open').sort((a, b) => a.until - b.until);
-  const later = venues.filter((v) => v.state === 'later').sort((a, b) => a.until - b.until);
-  const closed = venues.filter((v) => v.state === 'closed').sort((a, b) => a.name.localeCompare(b.name));
+  // Nearest-first needs your location; fall back to A–Z if it's unavailable.
+  if (diningSort === 'nearest') position = await getPosition().catch(() => position);
+  renderDining();
+  markUpdated('dining');
+}
 
+/** One spot inside a hall card. */
+function venueRow(v, now) {
+  let status;
+  if (v.state === 'open') {
+    const left = v.until - now;
+    status = left <= 30 * 60000
+      ? `<div class="status soon">Closes in ${inTime(left)}<small>at ${clock(v.until)}</small></div>`
+      : `<div class="status open">Open<small>until ${clock(v.until)}</small></div>`;
+  } else if (v.state === 'later') {
+    status = `<div class="status later">Opens ${clock(v.until)}<small>in ${inTime(v.until - now)}</small></div>`;
+  } else {
+    status = '<div class="status closed">Closed</div>';
+  }
+  const hours = v.periods.map((p) => `${p.label ? `${p.label} ` : ''}${clock(p.open)}–${clock(p.close)}`).join(' · ');
+  const menu = v.menu ? `<a class="menu-link" href="${esc(v.menu)}" target="_blank" rel="noopener" aria-label="${esc(v.name)} menu">${icon('external', { size: 18 })}</a>` : '';
+  return `<li class="venue${v.state === 'closed' ? ' is-closed' : ''}">
+    <div class="info"><div class="name">${esc(v.name)}</div><div class="hours">${esc(hours)}</div></div>
+    ${status}${menu}
+  </li>`;
+}
+
+/** "6 of 12 open · until 9 PM" / "Opens 7 AM" / "Closed for the day" */
+function hallSummary(hall, now) {
+  const open = hall.venues.filter((v) => v.state === 'open');
+  const later = hall.venues.filter((v) => v.state === 'later');
+  if (open.length) {
+    const until = new Date(Math.max(...open.map((v) => v.until)));
+    const count = hall.venues.length > 1 ? `${open.length} of ${hall.venues.length} open` : 'Open';
+    return { text: `${count} · until ${clock(until)}`, cls: 'open' };
+  }
+  if (later.length) {
+    const at = new Date(Math.min(...later.map((v) => v.until)));
+    return { text: `Opens ${clock(at)} · in ${inTime(at - now)}`, cls: 'later' };
+  }
+  return { text: 'Closed for the day', cls: 'closed' };
+}
+
+function renderDining() {
+  if (!lastVenues) return;
+  const now = Date.now();
+  const venues = lastVenues;
+  const openCount = venues.filter((v) => v.state === 'open').length;
   $('dining-summary').textContent = venues.length
-    ? `${open.length} of ${venues.length} places open right now`
+    ? `${openCount} of ${venues.length} places open right now`
     : 'Nothing is scheduled to open today.';
 
-  const row = (v) => {
-    let status;
-    if (v.state === 'open') {
-      const left = v.until - now;
-      status = left <= 30 * 60000
-        ? `<div class="status soon">Closes in ${inTime(left)}<small>at ${clock(v.until)}</small></div>`
-        : `<div class="status open">Open<small>until ${clock(v.until)}</small></div>`;
-    } else if (v.state === 'later') {
-      status = `<div class="status later">Opens ${clock(v.until)}<small>in ${inTime(v.until - now)}</small></div>`;
-    } else {
-      status = '<div class="status closed">Closed</div>';
-    }
-    const hours = v.periods.map((p) => `${p.label ? `${p.label} ` : ''}${clock(p.open)}–${clock(p.close)}`).join(' · ');
-    const menu = v.menu ? `<a class="menu-link" href="${esc(v.menu)}" target="_blank" rel="noopener" aria-label="${esc(v.name)} menu">${icon('external', { size: 18 })}</a>` : '';
-    return `<div class="card venue">
-      <div class="info"><div class="name">${esc(v.name)}</div>${v.building ? `<div class="bldg">${esc(v.building)}</div>` : ''}<div class="hours">${esc(hours)}</div></div>
-      ${status}${menu}
-    </div>`;
-  };
-  const group = (title, list) => (list.length ? `<section class="dining-group"><h2>${title}</h2>${list.map(row).join('')}</section>` : '');
-  $('dining-list').innerHTML = group('Open now', open) + group('Later today', later) + group('Closed for the day', closed);
-  markUpdated('dining');
+  const halls = groupByHall(venues);
+  const near = diningSort === 'nearest' && position;
+  for (const h of halls) h.dist = near && h.lat != null ? distanceM(position, h) : null;
+  halls.sort((a, b) => (near ? (a.dist ?? 1e9) - (b.dist ?? 1e9) : 0) || a.name.localeCompare(b.name));
+
+  const rank = { open: 0, later: 1, closed: 2 };
+  $('dining-list').innerHTML = (diningSort === 'nearest' && !position
+    ? '<p class="fine">Allow location to sort by nearest. Showing A–Z.</p>' : '') +
+    halls.map((h) => {
+      const sum = hallSummary(h, now);
+      const expanded = diningOpen.has(h.key);
+      const dist = h.dist != null ? `<span class="hall-dist">${fmtDistance(h.dist)}</span>` : '';
+      const spots = [...h.venues].sort((a, b) => rank[a.state] - rank[b.state] || (a.until ?? 0) - (b.until ?? 0) || a.name.localeCompare(b.name));
+      return `<section class="card hall${expanded ? ' expanded' : ''}">
+        <button class="hall-head" type="button" data-hall="${esc(h.key)}" aria-expanded="${expanded}">
+          <span class="hall-info"><span class="hall-name">${esc(h.name)}${dist}</span>
+            <span class="hall-sum ${sum.cls}">${esc(sum.text)}</span></span>
+          <span class="chev">${icon('chevron', { size: 20 })}</span>
+        </button>
+        ${expanded ? `<ul class="venues">${spots.map((v) => venueRow(v, now)).join('')}</ul>` : ''}
+      </section>`;
+    }).join('');
+}
+
+function setDiningSort(sort) {
+  diningSort = sort;
+  store.set('diningSort', sort);
+  for (const b of document.querySelectorAll('[data-dining-sort]')) b.setAttribute('aria-checked', String(b.dataset.diningSort === sort));
+  if (tab === 'dining') refresh();
 }
 
 // ---------------------------------------------------------------------------
@@ -906,6 +959,18 @@ function init() {
     renderThemes();
   });
   $('relay-save').addEventListener('click', saveRelay);
+
+  // Dining: expand/collapse halls (remembered) and the sort setting
+  $('dining-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-hall]');
+    if (!b) return;
+    const key = b.dataset.hall;
+    diningOpen.has(key) ? diningOpen.delete(key) : diningOpen.add(key);
+    store.set('diningOpen', [...diningOpen]);
+    renderDining();
+  });
+  for (const b of document.querySelectorAll('[data-dining-sort]')) b.addEventListener('click', () => setDiningSort(b.dataset.diningSort));
+  for (const b of document.querySelectorAll('[data-dining-sort]')) b.setAttribute('aria-checked', String(b.dataset.diningSort === diningSort));
 
   // Pause when hidden, refresh when back.
   document.addEventListener('visibilitychange', () => (document.hidden ? clearTimeout(timer) : refresh()));

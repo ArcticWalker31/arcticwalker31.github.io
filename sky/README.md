@@ -20,6 +20,7 @@ Open-Meteo data is CC BY 4.0, which is why the attribution sits at the bottom of
 - **Location**: GPS each time the app opens. If that fails, it uses the last good location and says "Using last location".
 - **Caching**: the last forecast is stored on the device, so the app opens instantly and works offline. It re-fetches when opened or brought back to the foreground if the data is over 10 minutes old, or if you've moved more than 2 km. Pull down (or use Settings → Refresh now) to force a refresh.
 - **Scene**: the colors follow the real sky (sunrise and sunset come from the forecast), and the sun follows its actual arc. Clouds come from cloud cover, rain and snow density from intensity, and tree sway and cloud speed from wind. Storms get lightning, and clear nights get stars and shooting stars. The animation pauses in the background and becomes a still image if your phone's reduce-motion setting is on.
+- **Day view**: tap any day in the 10-day list for a full-screen view like Apple Weather's. Switch days with the strip at the top (or swipe the header sideways), and pick a chart: Temperature (Actual / Feels Like), Precipitation, UV or Humidity. **Press and hold** the chart to scrub through the day; the readout shows that hour (temperature shows both Actual and Feels like). On today, earlier hours are dashed/dimmed with a "now" line. A day summary sits below.
 - **Units**: °F, mph, inches, inHg.
 - **Settings** (gear, top right): pick one of six color schemes (Classic, Meadow, Earthy, Pastel, Ocean, Mono), or refresh. Each scheme defines a clear-day and clear-night look, and the other weather/time looks are blended from it, so rain, snow and dusk still read correctly. The choice is saved on the device (`sky.theme`).
 
@@ -33,6 +34,7 @@ Open-Meteo data is CC BY 4.0, which is why the attribution sits at the bottom of
 | `geo.js` | GPS, place name, distance |
 | `scene.js` | Animated sky (SVG landscape + canvas particles) |
 | `chart.js` | Hourly chart (temperature / precipitation / UV) |
+| `daysheet.js` | Full-screen day view with press-and-hold scrubbing |
 | `icons.js` | Line icons (adapted from Lucide, ISC) |
 
 Storage keys use the `sky.` prefix (`sky.cache`, `sky.loc`, `sky.mode`, `sky.detailsOpen`, `sky.theme`).

@@ -66,3 +66,32 @@ function splitName(full) {
   const i = full.indexOf(' - ');
   return i < 0 ? { building: '', name: full } : { building: full.slice(0, i), name: full.slice(i + 3) };
 }
+
+/**
+ * Dining halls: the building part of each venue name in VT's feed, with a
+ * friendlier display name and a location (for "nearest first").
+ * Venues without a building prefix (e.g. "West End") are their own hall.
+ */
+export const HALLS = {
+  'Turner Place': { name: 'Turner Place', lat: 37.23045, lon: -80.42294 },
+  'West End': { name: 'West End', lat: 37.22261, lon: -80.42022 },
+  'Perry Place': { name: 'Perry Place', lat: 37.22944, lon: -80.42606 },
+  'Owens Hall': { name: 'Owens', lat: 37.2267, lon: -80.4189 },
+  'Squires Food Court': { name: 'Squires', lat: 37.2298, lon: -80.4187 },
+  Dietrick: { name: 'Dietrick', lat: 37.2245, lon: -80.4211 },
+  GLC: { name: 'GLC', lat: 37.2282, lon: -80.4176 },
+  'Goodwin Hall': { name: 'Goodwin Hall', lat: 37.2324, lon: -80.4254 },
+  'Johnston Student Center': { name: 'Johnston Student Center', lat: 37.2292, lon: -80.4246 },
+};
+
+/** Group venues into halls: [{ key, name, lat?, lon?, venues }] */
+export function groupByHall(venues) {
+  const halls = new Map();
+  for (const v of venues) {
+    const key = v.building || v.name;
+    const info = HALLS[key] || { name: key };
+    if (!halls.has(key)) halls.set(key, { key, ...info, venues: [] });
+    halls.get(key).venues.push(v);
+  }
+  return [...halls.values()];
+}

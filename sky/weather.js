@@ -22,6 +22,7 @@ const HOURLY = [
   'temperature_2m', 'apparent_temperature', 'precipitation_probability', 'precipitation',
   'weather_code', 'uv_index', 'is_day', 'pressure_msl', 'cloud_cover',
   'wind_speed_10m', 'wind_gusts_10m', 'wind_direction_10m',
+  'relative_humidity_2m', 'dew_point_2m',
 ];
 const DAILY = [
   'weather_code', 'temperature_2m_max', 'temperature_2m_min', 'precipitation_probability_max',
@@ -145,6 +146,8 @@ function normalize(raw) {
       wind: h.wind_speed_10m[i],
       gust: h.wind_gusts_10m[i],
       windDir: h.wind_direction_10m[i],
+      humidity: h.relative_humidity_2m?.[i] ?? null,
+      dew: h.dew_point_2m?.[i] ?? null,
     })),
     daily: d.time.map((date, i) => ({
       date,
