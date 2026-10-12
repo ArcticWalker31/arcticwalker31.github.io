@@ -1,6 +1,6 @@
 // app.js — Kyber Stock UI. Data and sync live in store.js.
 
-import * as S from './store.js';
+import * as S from './store.js?v=3';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -157,7 +157,7 @@ function openRestock() {
   $('restock').innerHTML = colors().map((c) => `<li>
     ${crystal(c.hex, 28)}<span class="name">${esc(c.name)} <span class="now">· ${c.count} now</span></span>
     <button class="step" type="button" data-rs="${esc(c.id)}" data-n="-1" aria-label="Fewer ${esc(c.name)}">−</button>
-    <input type="text" inputmode="numeric" pattern="[0-9]*" value="0" data-rs-input="${esc(c.id)}" aria-label="${esc(c.name)} made">
+    <input type="text" inputmode="numeric" value="0" data-rs-input="${esc(c.id)}" aria-label="${esc(c.name)} made (negative removes)">
     <button class="step" type="button" data-rs="${esc(c.id)}" data-n="1" aria-label="More ${esc(c.name)}">+</button>
   </li>`).join('');
   $('restock-sheet').showModal();
@@ -166,11 +166,14 @@ function openRestock() {
 function saveRestock() {
   const ops = [...document.querySelectorAll('[data-rs-input]')]
     .map((i) => ({ t: 'delta', id: i.dataset.rsInput, n: parseInt(i.value, 10) || 0 }))
-    .filter((o) => o.n > 0);
+    .filter((o) => o.n !== 0);
   if (ops.length) {
     S.commit(...ops);
-    const total = ops.reduce((a, o) => a + o.n, 0);
-    toast(`Added ${total} crystal${total === 1 ? '' : 's'}`, ops.map((o) => ({ ...o, n: -o.n })));
+    const added = ops.filter((o) => o.n > 0).reduce((a, o) => a + o.n, 0);
+    const removed = -ops.filter((o) => o.n < 0).reduce((a, o) => a + o.n, 0);
+    const plural = (n) => `${n} crystal${n === 1 ? '' : 's'}`;
+    const text = [added && `Added ${plural(added)}`, removed && `Removed ${plural(removed)}`].filter(Boolean).join(' · ');
+    toast(text, ops.map((o) => ({ ...o, n: -o.n })));
   }
   $('restock-sheet').close();
 }
@@ -269,7 +272,11 @@ function init() {
     const b = e.target.closest('[data-rs]');
     if (!b) return;
     const input = document.querySelector(`[data-rs-input="${b.dataset.rs}"]`);
-    input.value = Math.max(0, (parseInt(input.value, 10) || 0) + Number(b.dataset.n));
+    input.value = (parseInt(input.value, 10) || 0) + Number(b.dataset.n); // negative = remove
+    input.classList.toggle('neg', Number(input.value) < 0);
+  });
+  $('restock').addEventListener('input', (e) => {
+    if (e.target.matches('[data-rs-input]')) e.target.classList.toggle('neg', (parseInt(e.target.value, 10) || 0) < 0);
   });
   $('restock').addEventListener('focusin', (e) => { if (e.target.matches('input')) e.target.select(); });
   $('restock-save').addEventListener('click', saveRestock);

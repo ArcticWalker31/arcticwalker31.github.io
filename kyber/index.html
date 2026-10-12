@@ -18,9 +18,10 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
 
-  <link rel="stylesheet" href="../shared/tokens.css">
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
+  <!-- ?v= tags make phones fetch fresh copies after an update; bump them when files change. -->
+  <link rel="stylesheet" href="../shared/tokens.css?v=3">
+  <link rel="stylesheet" href="style.css?v=3">
+  <script type="module" src="app.js?v=3"></script>
 </head>
 <body>
   <main class="app">
@@ -75,9 +76,9 @@
         <h2 id="restock-title">Add new crystals</h2>
         <button class="icon-btn" type="button" data-close aria-label="Close"></button>
       </div>
-      <p class="sub">How many of each did you make?</p>
+      <p class="sub">How many of each did you make? Go below 0 to remove some (broken, miscounted).</p>
       <ul class="restock" id="restock"></ul>
-      <button class="btn primary wide" id="restock-save" type="button">Add to stock</button>
+      <button class="btn primary wide" id="restock-save" type="button">Update stock</button>
     </div>
   </dialog>
 

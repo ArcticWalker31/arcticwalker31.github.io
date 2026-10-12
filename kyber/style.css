@@ -141,6 +141,7 @@ h2 { font-size: 18px; margin: 26px 0 10px; }
 .restock { list-style: none; margin: 12px 0 0; padding: 0; }
 .restock li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .restock .name { flex: 1; font-weight: 600; }
+.restock input.neg { color: var(--out); border-color: var(--out); }
 .restock .now { font-size: 13px; color: var(--muted); font-weight: 400; }
 .restock input { width: 56px; height: 40px; text-align: center; border: 1.5px solid var(--border); border-radius: 10px; background: var(--card); font-size: 18px; font-weight: 700; }
 

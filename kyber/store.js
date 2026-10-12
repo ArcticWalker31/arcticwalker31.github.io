@@ -16,7 +16,7 @@
 //   { t: 'remove', id }                   delete a color
 //   { t: 'seven', ids }                   change the 7-pack contents
 
-import * as G from '../shared/gist.js';
+import * as G from '../shared/gist.js?v=3';
 
 export const FILE = 'kyber.json';
 const NS = 'ks.';
