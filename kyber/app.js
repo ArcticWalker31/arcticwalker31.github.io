@@ -31,12 +31,18 @@ const level = (c) => (c.count <= 0 ? 'out' : c.count <= c.low ? 'low' : 'ok');
 
 function render() {
   const list = colors();
+  const owed = list.filter((c) => c.count < 0);   // sold but not made yet
   const out = list.filter((c) => c.count <= 0);
   const low = list.filter((c) => c.count > 0 && c.count <= c.low);
   const alert = $('alert');
   if (out.length) {
     alert.className = 'alert out';
-    alert.innerHTML = `<b>Out:</b> ${out.map((c) => esc(c.name) + (c.count < 0 ? ` (owe ${-c.count})` : '')).join(', ')}${low.length ? ` · <b>Low:</b> ${low.map((c) => `${esc(c.name)} (${c.count})`).join(', ')}` : ''}`;
+    const empty = out.filter((c) => c.count === 0);
+    alert.innerHTML = [
+      owed.length && `<b>Make for current orders:</b> ${owed.map((c) => `${esc(c.name)} ×${-c.count}`).join(', ')}`,
+      empty.length && `<b>Out:</b> ${empty.map((c) => esc(c.name)).join(', ')}`,
+      low.length && `<b>Low:</b> ${low.map((c) => `${esc(c.name)} (${c.count})`).join(', ')}`,
+    ].filter(Boolean).join(' · ');
   } else if (low.length) {
     alert.className = 'alert low';
     alert.innerHTML = `<b>Make more soon:</b> ${low.map((c) => `${esc(c.name)} (${c.count} left)`).join(', ')}`;
@@ -116,7 +122,7 @@ function renderOrder() {
       const c = colorById(id);
       if (!c) return '';
       const short = c.count < 1;
-      return `<li>${crystal(c.hex, 26)}<b>${esc(c.name)}</b><span class="n${short ? ' short' : ''}">${short ? 'none left' : `${c.count} → ${c.count - 1}`}</span></li>`;
+      return `<li>${crystal(c.hex, 26)}<b>${esc(c.name)}</b><span class="n${short ? ' short' : ''}">${c.count} → ${c.count - 1}${short ? ` (owe ${1 - c.count})` : ''}</span></li>`;
     }).join('')}</ul>`;
   } else {
     ids = picks;
@@ -136,7 +142,7 @@ function renderOrder() {
   }
   for (const id of ids) need[id] = (need[id] || 0) + 1;
   const short = Object.entries(need).map(([id, n]) => ({ c: colorById(id), n })).filter(({ c, n }) => c && c.count < n);
-  $('order-warn').textContent = short.length ? `Not enough: ${short.map(({ c, n }) => `${c.name} (have ${Math.max(0, c.count)}, need ${n})`).join(', ')}. You can still record it.` : '';
+  $('order-warn').textContent = short.length ? `Not enough ${short.map(({ c, n }) => `${c.name} (have ${Math.max(0, c.count)}, need ${n})`).join(', ')}. Recording it puts the count below 0 so you know what to make.` : '';
   const ready = size === 7 ? ids.length > 0 : picks.length === size;
   $('order-record').disabled = !ready;
   $('order-record').textContent = size === 7 ? 'Record 7-pack' : ready ? 'Record order' : `Pick ${size - picks.length} more`;
