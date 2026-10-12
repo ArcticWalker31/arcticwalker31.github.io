@@ -49,12 +49,12 @@ function render() {
   $('stock').innerHTML = list.map((c) => {
     const lv = level(c);
     const state = lv === 'out' ? (c.count < 0 ? `Out · owe ${-c.count}` : 'Out') : lv === 'low' ? 'Low' : 'In stock';
-    return `<li class="${lv === 'ok' ? '' : lv}">
-      ${crystal(c.hex)}
-      <div class="info"><div class="name">${esc(c.name)}</div><div class="state">${state}</div></div>
-      <button class="step" type="button" data-adjust="${esc(c.id)}" data-n="-1" aria-label="One less ${esc(c.name)}">−</button>
+    // Square tile: crystal, count, name, status (changes go through "Add new crystals").
+    return `<li class="${lv === 'ok' ? '' : lv}" aria-label="${esc(c.name)}: ${c.count} left, ${state}">
+      ${crystal(c.hex, 40)}
       <div class="count${c.count < 0 ? ' neg' : ''}">${c.count}</div>
-      <button class="step" type="button" data-adjust="${esc(c.id)}" data-n="1" aria-label="One more ${esc(c.name)}">+</button>
+      <div class="name">${esc(c.name)}</div>
+      <div class="state">${state}</div>
     </li>`;
   }).join('');
 }
@@ -240,10 +240,6 @@ function init() {
 
   // Main screen
   for (const b of document.querySelectorAll('[data-order]')) b.addEventListener('click', () => openOrder(Number(b.dataset.order)));
-  $('stock').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-adjust]');
-    if (b) S.commit({ t: 'delta', id: b.dataset.adjust, n: Number(b.dataset.n) });
-  });
   $('open-restock').addEventListener('click', openRestock);
   $('toast-undo').addEventListener('click', () => {
     if (undoOps) S.commit(...undoOps);

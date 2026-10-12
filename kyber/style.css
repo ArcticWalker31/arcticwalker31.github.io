@@ -72,21 +72,22 @@ h2 { font-size: 18px; margin: 26px 0 10px; }
 /* ---------- Crystal glyph ---------- */
 .crystal { flex: none; display: block; }
 
-/* ---------- Inventory list ---------- */
-.stock { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+/* ---------- Inventory: 3 × 3 grid of square tiles ---------- */
+.stock { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .stock li {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--card);
+  aspect-ratio: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 8px; border: 1.5px solid var(--border); border-radius: 18px; background: var(--card);
+  text-align: center;
 }
 .stock li.low { border-color: var(--low); background: linear-gradient(var(--low-tint), var(--low-tint)), var(--card); }
 .stock li.out { border-color: var(--out); background: linear-gradient(var(--out-tint), var(--out-tint)), var(--card); }
-.stock .info { flex: 1; min-width: 0; }
-.stock .name { font-weight: 650; }
-.stock .state { font-size: 13px; color: var(--muted); }
+.stock .count { font-size: 30px; font-weight: 750; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.stock .count.neg { color: var(--out); }
+.stock .name { font-weight: 650; font-size: 14px; }
+.stock .state { font-size: 12px; color: var(--muted); }
 .stock li.low .state { color: var(--low); font-weight: 600; }
 .stock li.out .state { color: var(--out); font-weight: 600; }
-.stock .count { min-width: 48px; text-align: center; font-size: 26px; font-weight: 750; font-variant-numeric: tabular-nums; }
-.stock .count.neg { color: var(--out); }
 .step { width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--surface-2); font-size: 22px; font-weight: 600; }
 
 /* ---------- Toast ---------- */

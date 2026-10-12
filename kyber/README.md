@@ -10,7 +10,7 @@ Inventory for the Etsy kyber crystals: https://arcticwalker31.github.io/kyber/
   - If you don't have enough of a color, it warns you but still records it. The count goes negative, shown as "Out · owe 1", so you know what to make.
   - A 6-second **Undo** appears after each order or restock, for mistaps. No history is kept.
 - **Made new ones**: **+ Add new crystals** → set how many of each color you made → **Add to stock**.
-- **Quick fixes**: the − / + next to each color adjusts it by one.
+- **Inventory**: a 3 × 3 grid, one tile per color with how many are left.
 - **Warnings**: a color turns amber at or below its "low" number (default 3) and red when it's out. The banner at the top lists what to make.
 
 ## Settings (⚙)
