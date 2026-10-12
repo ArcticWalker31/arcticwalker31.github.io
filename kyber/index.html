@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kyber Stock</title>
+  <meta name="description" content="Kyber crystal inventory for the Etsy shop">
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kyber Stock">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FEFFEA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#2B231A" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1>Kyber Stock</h1>
+      <button class="sync-pill" id="sync-pill" type="button" title="Sync now"><span class="sync-dot"></span><span class="sync-text">…</span></button>
+      <button class="icon-btn" id="open-settings" type="button" aria-label="Settings"></button>
+    </header>
+
+    <div class="alert" id="alert" role="status"></div>
+
+    <section>
+      <h2>Record an order</h2>
+      <div class="order-btns">
+        <button type="button" class="order-btn" data-order="1"><span class="big">1</span><span>crystal</span></button>
+        <button type="button" class="order-btn" data-order="3"><span class="big">3</span><span>crystals</span></button>
+        <button type="button" class="order-btn" data-order="7"><span class="big">7</span><span>pack</span></button>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Inventory <span class="total" id="total"></span></h2>
+        <button class="btn" id="open-restock" type="button">+ Add new crystals</button>
+      </div>
+      <ul class="stock" id="stock"></ul>
+    </section>
+  </main>
+
+  <!-- Undo toast after recording an order -->
+  <div class="toast" id="toast" hidden><span id="toast-text"></span><button type="button" id="toast-undo">Undo</button></div>
+
+  <!-- ===== Order picker ===== -->
+  <dialog class="sheet" id="order-sheet" aria-labelledby="order-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="order-title">Order</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+      </div>
+      <p class="sub" id="order-sub"></p>
+      <div class="picked" id="picked"></div>
+      <div class="palette" id="palette"></div>
+      <p class="warn" id="order-warn"></p>
+      <button class="btn primary wide" id="order-record" type="button">Record order</button>
+    </div>
+  </dialog>
+
+  <!-- ===== Add new crystals ===== -->
+  <dialog class="sheet" id="restock-sheet" aria-labelledby="restock-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="restock-title">Add new crystals</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+      </div>
+      <p class="sub">How many of each did you make?</p>
+      <ul class="restock" id="restock"></ul>
+      <button class="btn primary wide" id="restock-save" type="button">Add to stock</button>
+    </div>
+  </dialog>
+
+  <!-- ===== Settings ===== -->
+  <dialog class="sheet" id="settings-sheet" aria-labelledby="settings-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="settings-title">Settings</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+      </div>
+
+      <h3>Sync (phone + laptop)</h3>
+      <div id="sync-connected" hidden>
+        <p class="fine">Syncing through your private Gist (the same one Habits uses) as <code>kyber.json</code>.</p>
+      </div>
+      <div id="sync-setup" hidden>
+        <p class="fine">Uses the same GitHub token and Gist as your Habits app. If Habits is already set up in this browser, this connects automatically. Otherwise paste them here.</p>
+        <label class="field"><span>GitHub token (Gist read/write)</span><input id="gh-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+        <label class="field"><span>Gist ID</span><input id="gh-gist" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="from Habits → Settings"></label>
+        <div class="row">
+          <button class="btn primary" id="gh-connect" type="button">Connect</button>
+          <button class="btn" id="gh-create" type="button">Create new Gist</button>
+        </div>
+      </div>
+      <p class="msg" id="sync-msg" role="status"></p>
+
+      <h3>Colors</h3>
+      <p class="fine">Name, swatch color, and the count at or below which it shows as low.</p>
+      <ul class="color-edit" id="color-edit"></ul>
+      <button class="btn" id="add-color" type="button">+ Add a color</button>
+
+      <h3>7-pack contents</h3>
+      <div class="seven-pick" id="seven-pick"></div>
+    </div>
+  </dialog>
+</body>
+</html>

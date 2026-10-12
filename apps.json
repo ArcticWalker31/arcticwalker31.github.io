@@ -22,5 +22,11 @@
     "name": "Campus",
     "description": "BT buses, gym & dining",
     "icon": "campus/icons/icon-192.png"
+  },
+  {
+    "path": "kyber/",
+    "name": "Kyber Stock",
+    "description": "Crystal inventory",
+    "icon": "kyber/icons/icon-192.png"
   }
 ]
