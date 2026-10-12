@@ -73,9 +73,12 @@ h2 { font-size: 18px; margin: 26px 0 10px; }
 .crystal { flex: none; display: block; }
 
 /* ---------- Inventory: 3 × 3 grid of square tiles ---------- */
-.stock { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+/* minmax(0, 1fr) + min-width: 0 let columns shrink to the screen; without them a
+ * square tile widens to fit its content and the row runs off narrow phones. */
+.stock { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .stock li {
   aspect-ratio: 1;
+  min-width: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   padding: 8px; border: 1.5px solid var(--border); border-radius: 18px; background: var(--card);
   text-align: center;
@@ -86,6 +89,17 @@ h2 { font-size: 18px; margin: 26px 0 10px; }
 .stock .count.neg { color: var(--out); }
 .stock .name { font-weight: 650; font-size: 14px; }
 .stock .state { font-size: 12px; color: var(--muted); }
+.stock .name, .stock .state { max-width: 100%; overflow-wrap: anywhere; }
+
+/* Phones: smaller tiles and contents so three fit side by side. */
+@media (max-width: 480px) {
+  .stock { gap: 8px; }
+  .stock li { padding: 6px; border-radius: 14px; gap: 0; }
+  .stock .crystal { width: 28px; height: 28px; }
+  .stock .count { font-size: 22px; margin-top: 2px; }
+  .stock .name { font-size: 13px; }
+  .stock .state { font-size: 11px; }
+}
 .stock li.low .state { color: var(--low); font-weight: 600; }
 .stock li.out .state { color: var(--out); font-weight: 600; }
 .step { width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--surface-2); font-size: 22px; font-weight: 600; }
