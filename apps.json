@@ -28,5 +28,11 @@
     "name": "Kyber Stock",
     "description": "Crystal inventory",
     "icon": "kyber/icons/icon-192.png"
+  },
+  {
+    "path": "forge/",
+    "name": "Forge",
+    "description": "Workouts with Kai",
+    "icon": "forge/icons/icon-192.png"
   }
 ]

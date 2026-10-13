@@ -9,6 +9,7 @@ My personal web apps, all hosted from this one repo on GitHub Pages. Each app is
 | [Sky](sky/README.md) | https://arcticwalker31.github.io/sky/ (weather) |
 | [Campus](campus/README.md) | https://arcticwalker31.github.io/campus/ (BT buses, gym crowds, dining hours) |
 | [Kyber Stock](kyber/README.md) | https://arcticwalker31.github.io/kyber/ (Etsy crystal inventory) |
+| [Forge](forge/README.md) | https://arcticwalker31.github.io/forge/ (bodyweight training with Kai) |
 
 Plain HTML/CSS/JS everywhere: no build step, no npm.
 
@@ -20,10 +21,12 @@ apps.json         list of apps shown on the launcher
 shared/
   tokens.css      site-wide colors for light and dark mode
   gist.js         shared private-Gist storage (one file per app, same token as Habits)
+  sync.js         local-first synced store built on gist.js (used by Forge)
 habits/           the habit tracker (its own README)
 sky/              the weather app (its own README)
 campus/           VT buses, gym and dining (its own README)
 kyber/            Kyber crystal inventory (its own README)
+forge/            workout trainer (its own README)
 _template/        copy this to start a new app
 tools/
   make-icons.ps1  generates letter icons for a new app
