@@ -3,7 +3,7 @@
 // Personality mixes by situation: hype when you're on it, calm after a
 // workout, tougher the longer you've been away.
 //
-// Pose images live in trainer/ as <pose>.png (or .jpg / .webp). Missing poses
+// Pose images live in trainer/ as <pose>.jpg (or .png / .webp). Missing poses
 // fall back to idle, so the app works with just one picture.
 
 export const POSES = {
@@ -54,8 +54,8 @@ export function checkIn(ctx) {
 export const levelUpLine = (level, title) => ({ pose: 'celebrate', text: fill(pick(LINES.levelUp, level), { level, title }) });
 export const prLine = (pr) => ({ pose: 'flex', text: fill(pick(LINES.pr, pr.length), { pr }) });
 
-/** <img> markup that tries pose.png/.jpg/.webp, then falls back to idle. */
+/** <img> markup that tries pose.jpg/.png/.webp, then falls back to idle. */
 export function poseImg(pose, cls = 'kai-img') {
-  const tries = [`trainer/${pose}.png`, `trainer/${pose}.jpg`, `trainer/${pose}.webp`, 'trainer/idle.jpg'];
+  const tries = [`trainer/${pose}.jpg`, `trainer/${pose}.png`, `trainer/${pose}.webp`, 'trainer/idle.jpg'];
   return `<img class="${cls}" src="${tries[0]}" alt="Kai" data-tries='${JSON.stringify(tries.slice(1))}' onerror="const t=JSON.parse(this.dataset.tries);if(t.length){this.src=t.shift();this.dataset.tries=JSON.stringify(t);}">`;
 }

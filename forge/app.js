@@ -1,9 +1,9 @@
 // app.js — Forge UI: home (Kai + week + next workout), history, skills,
 // awards, the workout runner (circuit rounds + rest timer), and settings.
 
-import * as D from './data.js?v=2';
-import { EXERCISES, LADDERS, WORKOUTS, ROTATION, ABS_POOL, slotKey } from './program.js?v=2';
-import { checkIn, levelUpLine, poseImg } from './trainer.js?v=2';
+import * as D from './data.js?v=3';
+import { EXERCISES, LADDERS, WORKOUTS, ROTATION, ABS_POOL, slotKey } from './program.js?v=3';
+import { checkIn, levelUpLine, poseImg } from './trainer.js?v=3';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

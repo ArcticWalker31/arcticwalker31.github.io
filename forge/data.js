@@ -11,8 +11,8 @@
 //   achievements: { id: ISO date earned }
 // }
 
-import { createStore } from '../shared/sync.js?v=2';
-import { EXERCISES, LADDERS, WORKOUTS, ROTATION, DEFAULT_ABS, slotKey, keyToSlot } from './program.js?v=2';
+import { createStore } from '../shared/sync.js?v=3';
+import { EXERCISES, LADDERS, WORKOUTS, ROTATION, DEFAULT_ABS, slotKey, keyToSlot } from './program.js?v=3';
 
 export function defaults() {
   return {
@@ -102,7 +102,7 @@ export function ladderOf(exId) {
   return null;
 }
 
-/** Next in the Push → Pull → Abs rotation after your last workout. */
+/** Next in the Pull → Push → Abs rotation after your last workout. */
 export function nextWorkout(d) {
   const last = d.sessions[d.sessions.length - 1];
   if (!last) return ROTATION[0];

@@ -69,7 +69,7 @@ export const WORKOUTS = {
   pull: { name: 'Pull', slots: ['pullup', 'australian-chinup', 'scap-pull', 'ytw', 'chinup', 'active-hang'] },
   abs: { name: 'Abs', slots: null }, // chosen in settings (see ABS_POOL)
 };
-export const ROTATION = ['push', 'pull', 'abs'];
+export const ROTATION = ['pull', 'push', 'abs'];
 
 /** Everything that can go on Abs day. Ladders appear as one option each. */
 export const ABS_POOL = [

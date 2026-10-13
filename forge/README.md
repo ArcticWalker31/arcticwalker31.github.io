@@ -4,7 +4,7 @@ Bodyweight training with Kai: https://arcticwalker31.github.io/forge/
 
 ## How it works
 
-- **Rotation**: Push → Pull → Abs → repeat. Home always shows the next workout. Tap **Push / Pull / Abs** under it to do a different one today.
+- **Rotation**: Pull → Push → Abs → repeat. Home always shows the next workout. Tap **Push / Pull / Abs** under it to do a different one today.
 - **Circuits**: one set of every exercise = a round. After each round, a rest timer starts on its own (3:30 by default; +30 s or skip). It vibrates and beeps when it's done and moves you into the next round. After the last round you can **Finish** or do **One more round** (+50 XP).
 - **Logging**: each set is pre-filled with last time's number for that round. Adjust with − / + and tap **Done**. Timed holds have a **Start hold timer** stopwatch. You can leave the app mid-workout; it resumes where you were.
 - **Level-up suggestions**: hit the top of an exercise's range in every round, two workouts in a row, and Kai offers a harder target (or the next skill step).
@@ -24,7 +24,7 @@ Bodyweight training with Kai: https://arcticwalker31.github.io/forge/
 
 ## Kai's poses
 
-Kai uses one image per mood. Only `trainer/idle.jpg` exists right now (your original picture), and every other pose falls back to it. To add a pose, save the image as `trainer/<name>.png` (or `.jpg` / `.webp`) and push.
+Kai uses one image per mood, all in `trainer/` as 600px-wide JPEGs (about 60 KB each so the app loads fast). Any missing pose falls back to `idle.jpg`. To replace one, save it as `trainer/<name>.jpg` (`.png` / `.webp` also work, but shrink big images first).
 
 **Image tips:** portrait (about 9:16), Kai centered with his **head in the top third** (the app crops from the top), and a simple background.
 
