@@ -1,5 +1,12 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#E8913A"/>
-  <text x="256" y="248" text-anchor="middle" dominant-baseline="central"
-        font-family="Segoe UI, system-ui, sans-serif" font-weight="600" font-size="266" fill="#17100A">F</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Forge icon: anvil with sparks. icons/*.png are rendered from the same shapes. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A1A0E"/><stop offset="1" stop-color="#120B06"/></linearGradient>
+    <linearGradient id="metal" x1="0" y1="176" x2="0" y2="346" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F7B95A"/><stop offset="1" stop-color="#C95F2C"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="250" r="210" fill="#F2A541" fill-opacity="0.086"/><circle cx="256" cy="250" r="170" fill="#F2A541" fill-opacity="0.086"/><circle cx="256" cy="250" r="130" fill="#F2A541" fill-opacity="0.086"/>
+  <path d="M96 206 C140 202 158 180 178 176 L420 176 L420 238 L338 238 C316 252 306 278 306 302 L366 302 L366 346 L146 346 L146 302 L206 302 C206 276 196 252 176 242 C148 230 122 222 96 206 Z" fill="url(#metal)" stroke="#3A2414" stroke-width="6" stroke-linejoin="round"/>
+  <rect x="182" y="176" width="238" height="10" fill="#FFE2A8" fill-opacity="0.78"/>
+  <circle cx="318" cy="120" r="9" fill="#FFD27A"/><circle cx="352" cy="96" r="6" fill="#FFD27A"/><circle cx="286" cy="92" r="5" fill="#FFD27A"/><circle cx="378" cy="136" r="5" fill="#FFD27A"/><circle cx="240" cy="120" r="4" fill="#FFD27A"/>
 </svg>
