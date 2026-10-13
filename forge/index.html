@@ -23,9 +23,9 @@
     catch (e) { document.documentElement.dataset.theme = 'golden'; }
   </script>
   <!-- ?v= tags: bump when files change so phones don't keep stale copies. -->
-  <link rel="stylesheet" href="../shared/tokens.css?v=3">
-  <link rel="stylesheet" href="style.css?v=3">
-  <script type="module" src="app.js?v=3"></script>
+  <link rel="stylesheet" href="../shared/tokens.css?v=4">
+  <link rel="stylesheet" href="style.css?v=4">
+  <script type="module" src="app.js?v=4"></script>
 </head>
 <body>
   <div class="app">
@@ -66,6 +66,28 @@
     <div class="confetti" id="confetti"></div>
   </div>
 
+  <!-- ===== Workout editor ===== -->
+  <dialog class="sheet tall" id="editor" aria-labelledby="editor-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="editor-title">Edit workouts</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+      </div>
+      <div class="seg" id="editor-tabs" role="tablist" aria-label="Workout"></div>
+      <p class="fine">Reorder with ↑ ↓, remove with ✕, and change targets right here. Skills use the step you pick.</p>
+      <ul class="editor-list" id="editor-list"></ul>
+      <div id="editor-add"></div>
+    </div>
+  </dialog>
+
+  <!-- ===== Skill (tree node) ===== -->
+  <dialog class="sheet" id="skill-sheet" aria-label="Skill">
+    <div class="sheet-body">
+      <div class="sheet-head"><span></span><button class="icon-btn" type="button" data-close aria-label="Close"></button></div>
+      <div id="skill-body"></div>
+    </div>
+  </dialog>
+
   <!-- ===== Settings ===== -->
   <dialog class="sheet" id="settings" aria-labelledby="settings-title">
     <div class="sheet-body">
@@ -86,13 +108,7 @@
         <select id="set-rest"><option value="150">2:30</option><option value="180">3:00</option><option value="210">3:30</option><option value="240">4:00</option><option value="270">4:30</option></select></label>
       <label class="setting-row"><span>Sound at end of rest</span><input type="checkbox" id="set-sound"></label>
 
-      <h3>Abs day</h3>
-      <p class="fine">Tick what goes in your Abs workout. Skills (L-sit, Dragon flag, Windshield wipers) use your current ladder step.</p>
-      <div class="abs-pick" id="abs-pick"></div>
-
-      <h3>Targets</h3>
-      <p class="fine">Change the rep or second range for any exercise.</p>
-      <ul class="target-edit" id="target-edit"></ul>
+      <p class="fine">To change which exercises are in each workout, or their targets, tap <b>Edit</b> on the workout card on Home.</p>
 
       <h3>Sync (phone + laptop)</h3>
       <div id="sync-connected" hidden><p class="fine">Syncing through your private Gist (shared with Habits and Kyber Stock) as <code>workout.json</code>.</p></div>

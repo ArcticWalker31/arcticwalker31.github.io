@@ -8,18 +8,17 @@ Bodyweight training with Kai: https://arcticwalker31.github.io/forge/
 - **Circuits**: one set of every exercise = a round. After each round, a rest timer starts on its own (3:30 by default; +30 s or skip). It vibrates and beeps when it's done and moves you into the next round. After the last round you can **Finish** or do **One more round** (+50 XP).
 - **Logging**: each set is pre-filled with last time's number for that round. Adjust with − / + and tap **Done**. Timed holds have a **Start hold timer** stopwatch. You can leave the app mid-workout; it resumes where you were.
 - **Level-up suggestions**: hit the top of an exercise's range in every round, two workouts in a row, and Kai offers a harder target (or the next skill step).
-- **Skills**: progression ladders for Handstand, Planche, L-sit, Dragon flag and Windshield wipers. A workout uses your current step. Unlock the next from a suggestion, or pick any step in the Skills tab.
+- **Edit workouts**: tap **Edit** on the workout card on Home. Switch between Pull / Push / Abs, reorder (↑ ↓), remove (✕), change targets inline, pick the step for skill ladders (Handstand, Planche, L-sit, Dragon flag, Windshield wipers), and add any exercise, a skill ladder, or your own custom exercise.
+- **Skill tree** (Skills tab): 73 calisthenics skills across vertical/horizontal push, vertical/horizontal pull, core and legs, graded F → SS. The structure follows the WINGS skill tree (https://wingssw.com/#/skilltree). Drag to move, pinch or +/− to zoom, ⤢ to see it all. Tap a skill to set Locked / Unlocked (2 s or 1 rep) / In progress (6 s or 3 reps) / Mastered (12 s+ or 6+ reps) and see what it builds on and leads to. Exercises you log upgrade their skill automatically (never downgrade). Skill points (grade × status) give your **skill rank**: Bronze → Silver → Gold → Platinum → Diamond → Master.
 - **Motivation**:
   - **Weekly goal** (default 4) with a streak counted in weeks, so one missed day never breaks it.
   - **XP** (10 per set, +5 when you hit the target, +50 per workout, +25 per PR) and **levels** with titles: Rookie → Grinder → Athlete → Beast → Titan → Legend.
-  - **Achievements** and **personal records**, and Kai's check-ins get tougher the longer you're away.
+  - **44 achievements** (showing up, streaks, volume, PRs, levels, skill tree) and **personal records**, and Kai's check-ins get tougher the longer you're away.
 
 ## Settings (⚙)
 
 - **Color scheme**: Golden Hour, Midnight, Arcade, Earthy, Clean (saved per device).
 - **Training**: weekly goal, rounds per workout, rest length, end-of-rest sound.
-- **Abs day**: tick which exercises go in it (skills use your ladder step).
-- **Targets**: change any exercise's rep or second range.
 - **Sync**: same private Gist and token as Habits and Kyber Stock, saved as `workout.json`.
 
 ## Kai's poses
@@ -48,7 +47,8 @@ Give the generator your original image as the character reference, then use this
 |---|---|
 | `index.html`, `style.css` | Page, tabs, workout runner, the five color schemes |
 | `app.js` | Screens: home, history, skills, awards, runner, summary, celebrations, settings |
-| `program.js` | Exercises (targets, form cues), workouts, skill ladders, Abs pool |
+| `program.js` | Exercises (targets, form cues), default workouts, skill ladders |
+| `tree.js` | Skill tree: skills, grades, positions, connections |
 | `data.js` | Data model, sync (`../shared/sync.js`), XP/levels, streaks, PRs, suggestions, achievements |
 | `trainer.js` | Kai's lines per situation and pose image fallback |
 | `trainer/` | Kai's pose images |
