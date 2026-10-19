@@ -10,7 +10,7 @@ import { gistClient } from '../shared/gist.js?v=6';
 import {
   CARD, CARDS, RARITIES, RARITY_ORDER, LEVEL_COPIES, MAX_LEVEL, levelMult,
   harvestCoins, harvestXp, seedCost, growMinutes,
-} from './cards.js?v=1';
+} from './cards.js?v=2';
 
 const KEY = 'sp.save';
 const META = 'sp.meta';
@@ -30,6 +30,8 @@ export const WATER_MS = 2 * H;
 export const FREE_PACK_MS = 6 * H;
 export const DECK_SIZE = 8;
 export const PACKS = {
+  // Only new players get these: two at the start, with a guaranteed garden kit (see starterRolls).
+  starter: { name: 'Starter Packet', size: 4, price: 0, level: 0, guarantee: null, blurb: 'Seeds to start your garden', starter: true },
   basic: { name: 'Seed Packet', size: 4, price: 100, level: 1, guarantee: null, blurb: '4 cards' },
   bundle: { name: "Gardener's Bundle", size: 6, price: 500, level: 4, guarantee: 'rare', blurb: '6 cards · 1 Rare or better' },
   golden: { name: 'Golden Pack', size: 5, price: 1500, level: 8, guarantee: 'epic', blurb: '5 cards · 1 Epic or better' },
@@ -40,8 +42,6 @@ export const STREAK_REWARDS = [
 /** Coins for a duplicate of a card that's already Lv 5. */
 const MAXED_COINS = { common: 10, uncommon: 25, rare: 60, epic: 150, legendary: 400 };
 const FOIL_CHANCE = 0.04;
-const STARTER = ['radish', 'pea', 'lettuce', 'daisy', 'potato', 'basil', 'mint', 'wateringcan', 'gnome'];
-const STARTER_DECK = ['radish', 'pea', 'lettuce', 'daisy', 'potato', 'basil', 'mint', 'wateringcan'];
 
 // ---------------------------------------------------------------------------
 // Save + events
@@ -54,11 +54,11 @@ function fresh() {
   return {
     v: 1, savedAt: now, n: 0, created: now,
     coins: 150, xp: 0,
-    cards: Object.fromEntries(STARTER.map((id) => [id, { n: 1, at: now, seen: true }])),
-    deck: [...STARTER_DECK],
+    cards: {},
+    deck: [],
     plots: Array.from({ length: PLOTS }, (_, i) => ({ open: i < START_PLOTS })),
-    decor: ['gnome'],
-    packs: { basic: 1, bundle: 0, golden: 0 },
+    decor: [],
+    packs: { starter: 2, basic: 0, bundle: 0, golden: 0 },
     freePackAt: now + FREE_PACK_MS,
     streak: { day: '', count: 0 },
     toolReady: {},
@@ -76,7 +76,7 @@ function normalize(s) {
   for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
   s.stats = { ...f.stats, ...s.stats };
   s.prefs = { ...f.prefs, ...s.prefs };
-  s.packs = { ...f.packs, ...s.packs };
+  s.packs = { starter: 0, basic: 0, bundle: 0, golden: 0, ...s.packs }; // older saves never get starter packets
   while (s.plots.length < PLOTS) s.plots.push({ open: false });
   for (const id of Object.keys(s.cards)) if (!CARD[id]) delete s.cards[id];
   s.deck = s.deck.filter((id) => s.cards[id] && CARD[id].type !== 'decor').slice(0, DECK_SIZE);
@@ -419,8 +419,32 @@ function pickCard(rarity) {
   return pool[pool.length - 1];
 }
 
+/**
+ * The two starter packets build a playable first garden and deck:
+ * #1 a sun-maker, a shooter, a wall and a random plant; #2 another shooter,
+ * the Watering Can and two random cards. Unowned cards are strongly preferred.
+ */
+function starterRolls(first) {
+  const picked = [];
+  const pick = (pool) => {
+    pool = pool.filter((c) => !picked.includes(c));
+    const w = pool.map((c) => (save.cards[c.id] ? 1 : 10));
+    let x = Math.random() * w.reduce((a, b) => a + b, 0);
+    let card = pool[pool.length - 1];
+    for (let i = 0; i < pool.length; i++) { x -= w[i]; if (x <= 0) { card = pool[i]; break; } }
+    picked.push(card);
+  };
+  const common = (role) => CARDS.filter((c) => c.type === 'plant' && c.rarity === 'common' && c.role === role);
+  const random = (pred) => { const r = rollRarity(); const pool = BY_RARITY[r].filter(pred); pick(pool.length ? pool : BY_RARITY.common.filter(pred)); };
+  const isPlant = (c) => c.type === 'plant';
+  if (first) { pick(common('sun')); pick(common('shooter')); pick(common('wall')); random(isPlant); }
+  else { pick(common('shooter')); pick([CARD.wateringcan]); random(isPlant); random(() => true); }
+  return picked;
+}
+
 export function buyPack(kind) {
   const p = PACKS[kind];
+  if (p.starter) return fail('Starter Packets are only for new gardens.');
   if (playerLevel() < p.level) return fail(`Unlocks at level ${p.level}.`);
   if (save.coins < p.price) return fail(`Needs ${p.price} coins.`);
   save.coins -= p.price;
@@ -433,9 +457,11 @@ export function buyPack(kind) {
 export function openPack(kind) {
   const p = PACKS[kind];
   if (!(save.packs[kind] > 0)) return fail('No pack to open.');
+  const firstStarter = p.starter && save.packs[kind] >= 2;
   save.packs[kind]--;
   const rolls = [];
-  for (let i = 0; i < p.size; i++) {
+  if (p.starter) for (const card of starterRolls(firstStarter)) rolls.push({ card, foil: Math.random() < FOIL_CHANCE });
+  else for (let i = 0; i < p.size; i++) {
     const min = i === p.size - 1 ? p.guarantee : null;
     rolls.push({ card: pickCard(rollRarity(min)), foil: Math.random() < FOIL_CHANCE });
   }
@@ -459,6 +485,11 @@ export function openPack(kind) {
   // auto-fill an empty deck slot with a brand-new battle card.
   for (const r of results) {
     if (r.isNew && r.card.type !== 'decor' && save.deck.length < DECK_SIZE && !save.deck.includes(r.card.id)) save.deck.push(r.card.id);
+    // New decor goes straight into an empty decor slot.
+    if (r.isNew && r.card.type === 'decor') {
+      const slot = Array.from({ length: decorSlots() }, (_, i) => i).find((i) => !save.decor[i]);
+      if (slot !== undefined) { settleAll(now); save.decor[slot] = r.card.id; }
+    }
   }
   commit();
   return { ok: true, kind, results };

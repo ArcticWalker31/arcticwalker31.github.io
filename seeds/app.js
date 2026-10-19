@@ -1,11 +1,11 @@
 // app.js — Seed Pack screens: garden, battle, packs, cards, the pack-opening
 // show, sheets and settings. Game rules live in state.js / cards.js.
 
-import * as St from './state.js?v=1';
-import { CARD, CARDS, RARITIES, RARITY_ORDER, TYPES, ROLE_NAMES, MAX_LEVEL, harvestCoins, harvestXp, seedCost, growMinutes, battleStats } from './cards.js?v=1';
-import { cardSvg, cardArt, stageArt, pestArt, packetSvg } from './art.js?v=1';
-import { startBattle, stageInfo, PESTS } from './battle.js?v=1';
-import { sfx, isMuted, setMuted } from './sound.js?v=1';
+import * as St from './state.js?v=2';
+import { CARD, CARDS, RARITIES, RARITY_ORDER, TYPES, ROLE_NAMES, MAX_LEVEL, harvestCoins, harvestXp, seedCost, growMinutes, battleStats } from './cards.js?v=2';
+import { cardSvg, cardArt, stageArt, pestArt, packetSvg } from './art.js?v=2';
+import { startBattle, stageInfo, PESTS } from './battle.js?v=2';
+import { sfx, isMuted, setMuted } from './sound.js?v=2';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,6 +16,7 @@ const ls = {
   set(k, v) { try { localStorage.setItem('sp.' + k, JSON.stringify(v)); } catch { /* blocked */ } },
 };
 const coin = (n) => `<span class="coin"></span>${fmt(n)}`;
+const packCount = () => Object.values(S().packs).reduce((a, n) => a + (n || 0), 0);
 const svg100 = (inner) => `<svg viewBox="0 0 100 100" aria-hidden="true">${inner}</svg>`;
 const CARD_BACK = svg100(`<circle cx="50" cy="50" r="40" fill="#FBF5E6" stroke="#3B2A1E" stroke-width="4"/><path d="M50 74 V48" stroke="#4E9446" stroke-width="6" stroke-linecap="round"/><path d="M50 52 C 36 52 28 42 28 30 C 42 30 50 38 50 52 Z" fill="#6DB55B" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/><path d="M50 48 C 62 48 72 40 72 26 C 58 26 50 34 50 48 Z" fill="#8BC34A" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/>`);
 
@@ -73,7 +74,7 @@ const sheetQueue = [];
 let sheetHandler = null, sheetOnClose = null;
 function openSheet(title, html, onClick, onClose) {
   const d = $('sheet');
-  if (d.open) { sheetQueue.push([title, html, onClick, onClose]); return; }
+  if (d.open || !$('opening').hidden) { sheetQueue.push([title, html, onClick, onClose]); return; }
   $('sheet-title').textContent = title;
   $('sheet-content').innerHTML = html;
   sheetHandler = onClick || null;
@@ -87,10 +88,18 @@ $('sheet').addEventListener('close', () => {
   const cb = sheetOnClose;
   sheetHandler = sheetOnClose = null;
   if (cb) cb();
-  if (sheetQueue.length) setTimeout(() => openSheet(...sheetQueue.shift()), 120);
+  flushSheets();
 });
+/** Show the next queued sheet once nothing else (sheet or pack opening) is up. */
+function flushSheets() {
+  setTimeout(() => {
+    if (sheetQueue.length && !$('sheet').open && $('opening').hidden) openSheet(...sheetQueue.shift());
+  }, 120);
+}
 $('sheet').addEventListener('click', (e) => {
   if (e.target === $('sheet') || e.target.closest('[data-close]')) { closeSheet(); return; }
+  const op = e.target.closest('[data-open-pack]');
+  if (op) { closeSheet(); openPackFlow(op.dataset.openPack); return; }
   if (sheetHandler) sheetHandler(e);
 });
 $('settings').addEventListener('click', (e) => {
@@ -120,7 +129,7 @@ function renderHeader() {
   $('coin-chip').innerHTML = coin(s.coins);
   $('xpbar').firstElementChild.style.width = `${(L.into / L.need) * 100}%`;
   $('xpbar').title = `${fmt(L.into)} / ${fmt(L.need)} XP to level ${L.level + 1}`;
-  const packs = s.packs.basic + s.packs.bundle + s.packs.golden + (St.freePackIn() === 0 ? 1 : 0);
+  const packs = packCount() + (St.freePackIn() === 0 ? 1 : 0);
   $('packs-badge').hidden = !packs;
   $('packs-badge').textContent = packs;
   const unseen = Object.values(s.cards).filter((c) => c.seen === false).length;
@@ -176,9 +185,10 @@ function plotLabel(v) {
 function renderGarden() {
   const s = S(), now = Date.now();
   let h = '';
-  if (St.freePackIn(now) === 0) h += notice('basic', 'Free Seed Packet ready!', 'Claim it and open it', 'claim-free', 'Claim');
-  else if (s.packs.basic + s.packs.bundle + s.packs.golden > 0) {
-    const n = s.packs.basic + s.packs.bundle + s.packs.golden;
+  if (s.packs.starter > 0) h += notice('starter', `${s.packs.starter} Starter Packet${s.packs.starter > 1 ? 's' : ''}`, 'Open them to get your first seeds', 'open-starter', 'Open');
+  else if (St.freePackIn(now) === 0) h += notice('basic', 'Free Seed Packet ready!', 'Claim it and open it', 'claim-free', 'Claim');
+  else if (packCount() > 0) {
+    const n = packCount();
     h += notice(s.packs.golden ? 'golden' : s.packs.bundle ? 'bundle' : 'basic', `${n} unopened pack${n > 1 ? 's' : ''}`, 'New cards are waiting', 'go-packs', 'Open');
   }
   const boosts = [];
@@ -278,6 +288,7 @@ $('view-garden').addEventListener('click', (e) => {
   if (t.closest('[data-cancel-target]')) { targeting = null; renderGarden(); return; }
   const a = t.closest('[data-action]');
   if (a?.dataset.action === 'claim-free') { claimFree(); return; }
+  if (a?.dataset.action === 'open-starter') { openPackFlow('starter'); return; }
   if (a?.dataset.action === 'go-packs') { sfx('tap'); showTab('packs'); }
 });
 
@@ -307,6 +318,13 @@ function onPlot(i, el) {
 function openPlantPicker(i) {
   const s = S(), b = St.bonus();
   const plants = St.ownedCards().filter((c) => c.type === 'plant').sort((a, c) => a.grow - c.grow);
+  if (!plants.length) {
+    openSheet('Plant a seed', `<p class="empty">No seeds yet! Open a pack to get some plants.</p>
+      <button class="btn primary wide" type="button" data-go>Go to packs</button>`, (e) => {
+      if (e.target.closest('[data-go]')) { closeSheet(); showTab('packs'); }
+    });
+    return;
+  }
   const empties = s.plots.filter((p) => p.open && !p.crop).length;
   let all = ls.get('fillAll', false) && empties > 1;
   const list = () => `${empties > 1 ? `<label class="setting-row"><span>Plant in all ${empties} empty plots</span><input type="checkbox" id="fill-all" ${all ? 'checked' : ''}></label>` : ''}
@@ -415,6 +433,7 @@ function unlocksAt(level) {
 function renderPacks() {
   const s = S(), lvl = St.playerLevel(), now = Date.now();
   let h = '';
+  if (s.packs.starter > 0) h += notice('starter', `${s.packs.starter} Starter Packet${s.packs.starter > 1 ? 's' : ''}`, 'Open them to get your first seeds', 'open-starter', 'Open');
   // Daily streak
   const today = St.dayKey();
   const count = s.streak.day === today ? s.streak.count : 0;
@@ -436,6 +455,7 @@ function renderPacks() {
   // Packs (owned + shop)
   h += `<div class="section-head"><h2>Packs</h2><small>${coin(s.coins)}</small></div><div class="pack-row">`;
   for (const [kind, p] of Object.entries(St.PACKS)) {
+    if (p.starter) continue;
     const have = s.packs[kind], locked = lvl < p.level;
     h += `<div class="pack${locked && !have ? ' locked' : ''}">
       <span class="pk-img${have ? ' wobble' : ''}">${packetSvg(kind)}</span>
@@ -456,6 +476,7 @@ function renderPacks() {
 
 $('view-packs').addEventListener('click', (e) => {
   const t = e.target;
+  if (t.closest('[data-action="open-starter"]')) return openPackFlow('starter');
   if (t.closest('[data-claim]')) return claimFree();
   const o = t.closest('[data-open]');
   if (o) return openPackFlow(o.dataset.open);
@@ -538,12 +559,16 @@ function openPackFlow(kind) {
     if (skip) skip.hidden = true;
   };
 
-  const close = () => {
+  const close = (done = true) => {
     L.hidden = true;
     L.innerHTML = '';
     L.onclick = null;
     document.body.style.overflow = '';
-    render();
+    if (done && kind === 'starter' && !S().packs.starter) {
+      showTab('garden');
+      toast('Now tap an empty plot to plant your first seed!');
+    } else render();
+    if (done) flushSheets();
   };
 
   L.onclick = (e) => {
@@ -569,7 +594,7 @@ function openPackFlow(kind) {
       document.querySelectorAll('#o-cards [data-flip]').forEach((el) => { el.style.animation = 'none'; flip(el, true); });
       return;
     }
-    if (t.closest('[data-again]')) { close(); openPackFlow(kind); return; }
+    if (t.closest('[data-again]')) { close(false); openPackFlow(kind); return; }
     if (t.closest('[data-done]')) close();
   };
 }
@@ -830,31 +855,36 @@ St.on('levelup', (ups) => {
     openSheet(`Level ${u.level}!`, `<div class="reward"><div class="big">Level ${u.level}</div>
       <div class="items"><span class="item">${coin(u.coins)}</span><span class="item">${packetMini(u.pack)} ${St.PACKS[u.pack].name}</span></div>
       ${extra.length ? `<p>Unlocked: ${extra.join(', ')}.</p>` : ''}
-      <button class="btn primary wide" type="button" data-close>Yay!</button></div>`);
+      <div class="row" style="justify-content:center"><button class="btn primary" type="button" data-open-pack="${u.pack}">Open the pack</button><button class="btn" type="button" data-close>Later</button></div></div>`);
   }
 });
 
+/** First visit ever: welcome, then straight into opening the two Starter Packets. */
+function welcome() {
+  openSheet('Welcome to Seed Pack!', `<div class="reward">
+    <span style="display:block;width:96px">${packetSvg('starter')}</span>
+    <p>Your garden is waiting! You start with ${coin(S().coins)} and <b>2 Starter Packets</b> full of seeds.</p>
+    <ul>
+      <li><b>Garden:</b> tap an empty plot to plant. Plants grow in real time, so come back to harvest coins and XP.</li>
+      <li><b>Packs:</b> open them for new cards. Duplicates level cards up.</li>
+      <li><b>Battle:</b> optional. Defend the garden from pests with your deck of 8.</li>
+    </ul>
+    <button class="btn primary wide" type="button" data-open-pack="starter">Open my packets</button></div>`);
+}
+
 function dailyCheck() {
   const brandNew = !(S().n > 0);
-  const startCoins = S().coins;
-  const r = St.claimStreak();
-  if (brandNew) {
-    openSheet('Welcome to Seed Pack!', `<div class="reward">
-      <p>Here's your starter kit: <b>9 cards</b>, ${coin(startCoins)} and a free Seed Packet.</p>
-      <ul>
-        <li><b>Garden:</b> tap an empty plot to plant. Plants grow in real time, so come back to harvest coins and XP.</li>
-        <li><b>Packs:</b> open them for new cards. Duplicates level cards up.</li>
-        <li><b>Battle:</b> optional. Defend the garden from pests with your deck of 8.</li>
-      </ul>
-      <button class="btn primary wide" type="button" data-close>Let's grow</button></div>`);
-  }
+  const r = St.claimStreak(); // a brand-new garden gets its day-1 coins quietly (they show in the welcome)
+  if (brandNew) { welcome(); return; }
   if (!r) return;
   const rw = r.reward;
   openSheet(`Day ${r.day} of 7`, `<div class="reward">
     <p>Welcome back to the garden!</p>
     <div class="items"><span class="item">${rw.coins ? coin(rw.coins) : `${packetMini(rw.pack)} ${St.PACKS[rw.pack].name}`}</span></div>
     <p class="fine">${r.day < 7 ? `Come back tomorrow for day ${r.day + 1}.` : 'A full week! The streak starts a new week tomorrow.'} Missing a day starts over at day 1.</p>
-    <button class="btn primary wide" type="button" data-close>Collect</button></div>`, null, () => render());
+    ${rw.pack
+      ? `<div class="row" style="justify-content:center"><button class="btn primary" type="button" data-open-pack="${rw.pack}">Open it now</button><button class="btn" type="button" data-close>Later</button></div>`
+      : '<button class="btn primary wide" type="button" data-close>Collect</button>'}</div>`, null, () => render());
   sfx('coin');
 }
 
@@ -911,7 +941,7 @@ $('reset').addEventListener('click', () => {
   St.resetSave();
   $('settings').close();
   showTab('garden');
-  toast('A fresh garden. Happy growing!');
+  welcome();
 });
 
 St.on('sync', (s) => {

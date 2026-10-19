@@ -4,9 +4,9 @@
 //
 // startBattle() builds the battle screen inside `host` and calls onEnd() once.
 
-import { CARD, battleStats, levelMult } from './cards.js?v=1';
-import { cardArt, pestArt, svgImage } from './art.js?v=1';
-import { sfx } from './sound.js?v=1';
+import { CARD, battleStats, levelMult } from './cards.js?v=2';
+import { cardArt, pestArt, svgImage } from './art.js?v=2';
+import { sfx } from './sound.js?v=2';
 
 const COLS = 5, ROWS = 7;
 const TOP = 0.9, BOTTOM = 0.75; // spawn strip above, fence strip below (in cells)

@@ -6,6 +6,11 @@ Open seed packets to collect cards, grow them in your garden in real time, and (
 
 ## How it plays
 
+- **Starting out**: a new garden gets 150 coins and **2 Starter Packets**, no cards. The welcome screen goes straight into opening them.
+  - Packet 1 always has a sun-maker, a shooter, a wall and a random plant.
+  - Packet 2 has another shooter, the Watering Can and two random cards.
+
+  New battle cards fill your deck, and new decor goes into an empty decor slot. Older saves don't get starter packets.
 - **Garden** (4×4): 6 plots to start, 10 more to unlock with coins and levels. Tap an empty plot to plant a seed you own (seeds cost a few coins). Plants grow in **real time** (Radish 5 min … Golden Apple Tree 12 h). Tap a ripe plant to harvest coins + XP. **Auto-replant** (on by default) puts the same seed back in. Ripe crops left too long **wilt**, slowly losing value down to half (never dying).
 - **Watering**: watered soil grows plants 50% faster for 2 h. Watering comes from tool cards (Watering Can, Sprinkler).
 - **Garden tools**: tool cards you own appear as round buttons with a recharge: water everything, speed up one plant (Trowel), double the next harvest (Fertilizer), harvest everything (Wheelbarrow), +50% growth (Greenhouse), +50% coins (Golden Hoe), ripen everything (Magic Watering Can).

@@ -327,13 +327,13 @@ export function svgImage(key, inner) {
 
 /** Seed packet art for the shop / opening animation. */
 export function packetSvg(kind) {
-  const P_ = { basic: ['#7CB342', '#C5E1A5', 'Seed Packet'], bundle: ['#1E88E5', '#BBDEFB', "Gardener's Bundle"], golden: ['#F9A825', '#FFF59D', 'Golden Pack'] }[kind];
+  const P_ = { starter: ['#E07A4F', '#FFD9C2', 'Starter Packet'], basic: ['#7CB342', '#C5E1A5', 'Seed Packet'], bundle: ['#1E88E5', '#BBDEFB', "Gardener's Bundle"], golden: ['#F9A825', '#FFF59D', 'Golden Pack'] }[kind];
   const [c, light, label] = P_;
   return `<svg viewBox="0 0 100 140" aria-hidden="true">
     <path d="M10 14 L90 14 L90 132 L10 132 Z" fill="${light}" ${O}/>
     <path d="M10 14 L14 6 L20 14 L26 6 L32 14 L38 6 L44 14 L50 6 L56 14 L62 6 L68 14 L74 6 L80 14 L86 6 L90 14" fill="${light}" ${O}/>
     <rect x="18" y="26" width="64" height="62" rx="8" fill="#FFFDF5" ${O1}/>
-    <g transform="translate(18 26) scale(0.64 0.62)">${kind === 'golden' ? PLANT.tree({ c: '#FFC400', gold: true }) : kind === 'bundle' ? PLANT.flower({ c: '#FFC107', center: '#6D4C41', petals: 16, style: 'big' }) : PLANT.root({ c: '#E0466B', shape: 'round' })}</g>
+    <g transform="translate(18 26) scale(0.64 0.62)">${kind === 'golden' ? PLANT.tree({ c: '#FFC400', gold: true }) : kind === 'starter' ? PLANT.flower({ c: '#FFFFFF', center: '#F6C744', petals: 10 }) : kind === 'bundle' ? PLANT.flower({ c: '#FFC107', center: '#6D4C41', petals: 16, style: 'big' }) : PLANT.root({ c: '#E0466B', shape: 'round' })}</g>
     <rect x="10" y="96" width="80" height="20" fill="${c}" ${O1}/>
     <text x="50" y="110" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="${label.length > 12 ? 8 : 10}" fill="#fff">${label}</text>
     ${kind === 'golden' ? '<g fill="#fff"><path d="M24 124 l1.5 4 l4 1.5 l-4 1.5 l-1.5 4 l-1.5 -4 l-4 -1.5 l4 -1.5 Z"/><path d="M76 122 l1.5 4 l4 1.5 l-4 1.5 l-1.5 4 l-1.5 -4 l-4 -1.5 l4 -1.5 Z"/></g>' : ''}
