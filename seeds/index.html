@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Seed Pack</title>
+  <meta name="description" content="Grow a garden, open seed packs, defend it from pests">
+
+  <link rel="manifest" href="manifest.json?v=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Seed Pack">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FBF5E6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1E2620" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1">
+  <link rel="icon" href="icons/icon.svg?v=1" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png?v=1" type="image/png" sizes="192x192">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Nunito:wght@500;700;800;900&display=swap">
+  <!-- ?v= tags: bump when files change so phones don't keep stale copies. -->
+  <link rel="stylesheet" href="style.css?v=1">
+  <script type="module" src="app.js?v=1"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1 class="brand">Seed Pack</h1>
+      <button class="chip level-chip" id="level-chip" type="button" aria-label="Level"></button>
+      <span class="chip coin-chip" id="coin-chip" aria-label="Coins"></span>
+      <button class="icon-btn" id="open-settings" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="sync-dot" id="sync-dot"></span>
+      </button>
+    </header>
+    <div class="xpbar" id="xpbar" role="progressbar" aria-label="XP to next level"><span></span></div>
+
+    <main class="view" id="view-garden"></main>
+    <main class="view" id="view-battle" hidden></main>
+    <main class="view" id="view-packs" hidden></main>
+    <main class="view" id="view-cards" hidden></main>
+
+    <nav class="tabbar" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" data-tab="garden" aria-selected="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 2.5-6 7-6 0 4-3 6-7 6z"/><path d="M5 21h14"/></svg>Garden</button>
+      <button type="button" role="tab" data-tab="battle" aria-selected="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Battle</button>
+      <button type="button" role="tab" data-tab="packs" aria-selected="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l2-2 2 2 2-2 2 2 2-2 2 2 2-2v16H5z"/><path d="M5 15h14"/><circle cx="12" cy="10" r="2.5"/></svg>Packs<span class="badge" id="packs-badge" hidden></span></button>
+      <button type="button" role="tab" data-tab="cards" aria-selected="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v13"/></svg>Cards<span class="badge" id="cards-badge" hidden></span></button>
+    </nav>
+  </div>
+
+  <!-- Full-screen layers -->
+  <section class="layer battle-layer" id="battle" hidden aria-label="Battle"></section>
+  <section class="layer opening" id="opening" hidden aria-label="Opening a pack"></section>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- One reusable bottom sheet for plots, cards, deck, decor, rewards… -->
+  <dialog class="sheet" id="sheet">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="sheet-title"></h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div id="sheet-content"></div>
+    </div>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog class="sheet" id="settings" aria-labelledby="settings-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="settings-title">Settings</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <label class="setting-row"><span>Sound effects</span><input type="checkbox" id="set-sound"></label>
+      <label class="setting-row"><span>Auto-replant<small>Harvesting replants the same seed</small></span><input type="checkbox" id="set-replant"></label>
+
+      <h3>Save &amp; sync</h3>
+      <p class="fine" id="sync-status"></p>
+      <div id="sync-connected" hidden>
+        <p class="fine">Your game save lives in its <b>own</b> private Gist (separate from your other apps), as <code>seedpack.json</code>. Other devices with your token find it on their own.</p>
+        <div class="row"><button class="btn" id="sync-now" type="button">Sync now</button><button class="btn" id="sync-copy" type="button">Copy Gist ID</button></div>
+      </div>
+      <div id="sync-setup" hidden>
+        <p class="fine">Uses the same GitHub token as your other apps. Seed Pack makes its own separate private Gist (or finds it, if another device already made one).</p>
+        <label class="field"><span>GitHub token</span><input id="gh-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+        <label class="field"><span>Game Gist ID <small>(optional)</small></span><input id="gh-gist" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Leave blank to find or create it"></label>
+        <button class="btn primary" id="gh-connect" type="button">Connect</button>
+      </div>
+
+      <h3>Help</h3>
+      <details class="help">
+        <summary>How to play</summary>
+        <ul>
+          <li><b>Garden:</b> tap an empty plot to plant a seed you own. Plants grow in real time. Tap a ripe plant to harvest coins and XP. Ripe crops slowly wilt (down to half value) if you leave them too long.</li>
+          <li><b>Tools</b> you own add garden powers (watering, boosts) with a recharge.</li>
+          <li><b>Packs:</b> a free Seed Packet every 6 hours, daily login rewards, level-ups and battles. Duplicates level cards up (to Lv 5): faster growth, bigger harvests, stronger in battle.</li>
+          <li><b>Battle</b> (optional): pick a stage, spend sunlight to place plants and use tools/weather from your deck of 8. Don't let 3 pests through the fence.</li>
+          <li><b>Decor</b> goes in decor slots for passive bonuses. You get more slots every 5 levels.</li>
+        </ul>
+      </details>
+
+      <h3>Danger zone</h3>
+      <button class="btn danger" id="reset" type="button">Start a new garden…</button>
+    </div>
+  </dialog>
+</body>
+</html>

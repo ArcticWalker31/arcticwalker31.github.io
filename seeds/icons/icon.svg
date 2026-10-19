@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Seed Pack icon: an opened seed packet with a sprout popping out and a radish on the front. icons/*.png are drawn from the same shapes. -->
+  <rect width="512" height="512" rx="112" fill="#F6C744"/>
+  <circle cx="256" cy="256" r="200" fill="#F9D766"/>
+  <g transform="rotate(-6 256 300)" stroke="#3B2A1E" stroke-linejoin="round" stroke-linecap="round">
+    <!-- shadow -->
+    <path transform="translate(14 12)" d="M158 204 L172 186 L186 204 L200 186 L214 204 L228 186 L242 204 L256 186 L270 204 L284 186 L298 204 L312 186 L326 204 L340 186 L354 204 L354 404 A14 14 0 0 1 340 418 L172 418 A14 14 0 0 1 158 404 Z" fill="#D9A33A" stroke="none"/>
+    <!-- back of the packet (inside of the torn opening) -->
+    <path d="M158 404 L158 178 A10 10 0 0 1 168 168 L344 168 A10 10 0 0 1 354 178 L354 404 Z" fill="#D9BF8C" stroke-width="14"/>
+    <!-- sprout -->
+    <path d="M256 262 C250 222 262 186 256 140" fill="none" stroke-width="32"/>
+    <path d="M256 262 C250 222 262 186 256 140" fill="none" stroke="#5E9E4B" stroke-width="16"/>
+    <path d="M254 152 C232 110 188 98 152 116 C170 154 216 170 254 152 Z" fill="#6DB55B" stroke-width="11"/>
+    <path d="M248 150 C224 136 196 126 172 120" fill="none" stroke="#4E9446" stroke-width="7"/>
+    <path d="M258 136 C274 94 318 78 354 92 C340 130 296 148 258 136 Z" fill="#4E9446" stroke-width="11"/>
+    <path d="M264 132 C290 120 314 108 334 99" fill="none" stroke="#3F7E3A" stroke-width="7"/>
+    <!-- front of the packet, torn zigzag top -->
+    <path d="M158 204 L172 186 L186 204 L200 186 L214 204 L228 186 L242 204 L256 186 L270 204 L284 186 L298 204 L312 186 L326 204 L340 186 L354 204 L354 404 A14 14 0 0 1 340 418 L172 418 A14 14 0 0 1 158 404 Z" fill="#FBF5E6" stroke-width="14"/>
+    <!-- radish -->
+    <path d="M252 244 C240 224 218 218 204 226 C212 244 236 252 252 244 Z" fill="#6DB55B" stroke-width="9"/>
+    <path d="M260 244 C272 222 296 216 310 224 C302 244 278 252 260 244 Z" fill="#4E9446" stroke-width="9"/>
+    <path d="M256 320 C257 330 255 337 250 342" fill="none" stroke-width="9"/>
+    <circle cx="256" cy="280" r="40" fill="#E0466B" stroke-width="11"/>
+    <ellipse cx="238" cy="262" rx="10" ry="6" fill="#FFFFFF" fill-opacity="0.55" stroke="none"/>
+    <circle cx="243" cy="282" r="5.5" fill="#3B2A1E" stroke="none"/>
+    <circle cx="269" cy="282" r="5.5" fill="#3B2A1E" stroke="none"/>
+    <path d="M248 295 C252 301 260 301 264 295" fill="none" stroke-width="5"/>
+    <!-- label band with seeds -->
+    <rect x="158" y="356" width="196" height="40" fill="#6DB55B" stroke-width="11"/>
+    <ellipse cx="216" cy="376" rx="9" ry="6" fill="#FBF5E6" stroke="none"/>
+    <ellipse cx="256" cy="376" rx="9" ry="6" fill="#FBF5E6" stroke="none"/>
+    <ellipse cx="296" cy="376" rx="9" ry="6" fill="#FBF5E6" stroke="none"/>
+  </g>
+</svg>

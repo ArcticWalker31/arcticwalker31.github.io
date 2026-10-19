@@ -76,3 +76,49 @@ export async function createGist(name, data) {
   setGistId(json.id);
   return json.id;
 }
+
+/**
+ * A client for a SEPARATE Gist (same GitHub token, its own Gist ID saved under
+ * `gistKey`). Used by apps that shouldn't share the main Gist, e.g. the game.
+ * Same methods as the module-level functions above.
+ */
+export function gistClient(gistKey, description = 'Personal app data') {
+  const getId = () => lsGet(gistKey);
+  const setId = (id) => lsSet(gistKey, (id || '').trim().split('/').filter(Boolean).pop() || '');
+  return {
+    getToken,
+    setToken,
+    getGistId: getId,
+    setGistId: setId,
+    isConfigured: () => !!(getToken() && getId()),
+    async readFile(name) {
+      const json = await api(`/gists/${encodeURIComponent(getId())}`);
+      const file = json.files?.[name];
+      if (!file) return null;
+      let text = file.content;
+      if (file.truncated) text = await (await fetch(file.raw_url, { cache: 'no-store' })).text();
+      try { return JSON.parse(text); } catch { throw new GistError('format', `${name} is not valid JSON`); }
+    },
+    async writeFile(name, data) {
+      await api(`/gists/${encodeURIComponent(getId())}`, {
+        method: 'PATCH',
+        body: { files: { [name]: { content: JSON.stringify(data) } } },
+      });
+    },
+    async createGist(name, data) {
+      const json = await api('/gists', {
+        method: 'POST',
+        body: { description, public: false, files: { [name]: { content: JSON.stringify(data) } } },
+      });
+      setId(json.id);
+      return json.id;
+    },
+    /** Look through your Gists for one holding `name`; saves and returns its ID (or ''). */
+    async findByFile(name) {
+      const list = await api('/gists?per_page=100');
+      const hit = list.find((g) => g.files && g.files[name]);
+      if (hit) setId(hit.id);
+      return hit ? hit.id : '';
+    },
+  };
+}
