@@ -24,9 +24,18 @@ Open seed packets to collect cards, grow them in your garden in real time, and (
 - **Cards** (80): 48 plants, 14 tools, 9 weather and 9 decor, in five rarities (Common 60%, Uncommon 25%, Rare 10%, Epic 4%, Legendary 1%). Cards you don't have are twice as likely to drop, and 4% of cards are **foil** (purely cosmetic shimmer). Cards are permanent unlocks. Duplicates level a card up to **Lv 5** (1, 2, 4, then 8 more copies). A higher level means faster growth, bigger harvests and stronger battle stats. Once a card is Lv 5, extra copies become coins.
 - **Battle** (optional): lane defense on a 5×7 lawn. Pests crawl down toward your fence.
   - **Placing cards**: spend **sunlight** (you start with 100 and get +25 every 7 s) to place plants from your **deck of 8**, or to use tool and weather spells. Sun-makers earn more sunlight, shooters fire up their lane, and walls soak up bites. Bombs blow up, slowers slow pests down, traps bite back, and healers heal.
+  - **Deck**: the deck editor filters by role or type (Sun-makers, Shooters, Walls, Healers, Slowers, Traps, Bombs, Tools, Weather). If the deck is full, adding a card (from the editor or a card's page) asks which deck card to swap out.
   - **Losing**: each lane has a one-time **sprinkler** that soaks the first pest to reach the fence there. After that, a pest getting through costs a life, and losing 3 lives loses the battle.
-  - **Stages**: new pests show up as you go (slugs, snails, grasshoppers that hop over plants, beetles, crows that fly over everything, moles that tunnel under). There's a **Gopher King** boss every 5th stage.
-  - **Rewards**: a first clear gives coins, XP and sometimes a pack. Replays give 40%. Losing still pays a little.
+  - **Chapters**: each has 10 stages, its own lawn, new pests and a boss at stages 5 and 10. After stage 50, the **Wild Garden** keeps going forever with every pest, cycling through the bosses.
+
+    | Chapter | Stages | New pests | Boss |
+    |---|---|---|---|
+    | Backyard | 1–10 | aphids, slugs, caterpillars, snails (shell), grasshoppers (hop over a plant), beetles (armor) | Gopher King |
+    | Veggie Patch | 11–20 | crows (fly over plants), moles (tunnel under the first rows), rabbits (fast chewers) | Raccoon Bandit (steals sunlight while it chews) |
+    | Greenhouse | 21–30 | ants (march in threes), wasps (fast flyers) | Queen Wasp (flies over everything) |
+    | Orchard | 31–40 | squirrels (hop to the next lane when blocked), deer (huge) | Old Badger (thick hide) |
+    | Moonlit Garden | 41–50 | moths (pairs of flyers), hedgehogs (curl up when hit and take much less damage) | Night Fox (fast) |
+  - **Rewards**: a first clear gives coins, XP and sometimes a pack: a Seed Packet every 3rd stage, a Bundle for a stage-5 boss, a **Golden Pack** for each chapter's final boss. Replays give 40%. Losing still pays a little.
 - **Levels**: XP comes from harvests and battles. Each level-up gives coins plus a pack (a Bundle every 5th level) and can unlock plots, shop packs and decor slots.
 
 ## Save & sync

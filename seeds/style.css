@@ -380,6 +380,23 @@ code { font-size: 0.85em; background: var(--paper-2); padding: 1px 5px; border-r
 .pest-chip svg { width: 28px; height: 28px; }
 .pest-chip.boss { background: #FFE9B0; color: #3B2A1E; }
 .reward-line { display: flex; flex-wrap: wrap; gap: 6px 14px; font-weight: 800; font-size: 0.9rem; align-items: center; }
+.swap-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; }
+.swap-grid .card .c-name { font-size: 0.66rem; }
+.pest-chip.more { padding: 4px 10px; color: var(--ink-soft); }
+.ch-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: var(--ink-soft); font-size: 0.82rem; }
+.ch-swatch { width: 18px; height: 18px; border-radius: 6px; border: 2px solid; flex: none; }
+.chapter { margin-bottom: 10px; padding: 12px; border-radius: 18px; background: var(--card); border: 2px solid var(--line); }
+.chapter.current { border-color: var(--leaf); }
+.chapter.locked { background: var(--paper-2); }
+.chapter.locked .pest-chip { background: var(--card); }
+.chapter .stage-list { margin-top: 10px; }
+.ch-head { display: flex; align-items: center; gap: 8px; }
+.ch-head b { font-family: var(--serif); font-size: 1.02rem; flex: 1; }
+.ch-head small { color: var(--ink-soft); font-weight: 800; }
+details.chapter summary { list-style: none; cursor: pointer; }
+details.chapter summary::-webkit-details-marker { display: none; }
+details.chapter summary .ch-head::after { content: '▾'; color: var(--ink-soft); }
+details.chapter[open] summary .ch-head::after { content: '▴'; }
 .stage-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .stage-btn { aspect-ratio: 1; border-radius: 14px; border: 2px solid var(--line); background: var(--card); font-family: var(--serif); font-weight: 800; font-size: 1.05rem; cursor: pointer; position: relative; }
 .stage-btn.cleared { background: var(--leaf-tint); color: var(--leaf-d); border-color: var(--leaf); }

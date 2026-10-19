@@ -4,9 +4,9 @@
 //
 // startBattle() builds the battle screen inside `host` and calls onEnd() once.
 
-import { CARD, battleStats, levelMult } from './cards.js?v=2';
-import { cardArt, pestArt, svgImage } from './art.js?v=2';
-import { sfx } from './sound.js?v=2';
+import { CARD, battleStats, levelMult } from './cards.js?v=3';
+import { cardArt, pestArt, svgImage } from './art.js?v=3';
+import { sfx } from './sound.js?v=3';
 
 const COLS = 5, ROWS = 7;
 const TOP = 0.9, BOTTOM = 0.75; // spawn strip above, fence strip below (in cells)
@@ -17,17 +17,53 @@ const START_SUN = 100, SUN_TICK = 7, SUN_TICK_AMT = 25;
 // Pests
 // ---------------------------------------------------------------------------
 export const PESTS = {
+  // Chapter 1 · Backyard
   aphid: { name: 'Aphid', hp: 110, speed: 0.26, bite: 20, pts: 1, size: 0.62, from: 1 },
   slug: { name: 'Slug', hp: 240, speed: 0.18, bite: 26, pts: 2, size: 0.74, from: 2 },
   caterpillar: { name: 'Caterpillar', hp: 180, speed: 0.32, bite: 28, pts: 2, size: 0.8, from: 3 },
   snail: { name: 'Snail', hp: 440, speed: 0.14, bite: 26, pts: 3, size: 0.8, armor: 0.25, from: 4, note: 'Shell blocks some damage' },
   grasshopper: { name: 'Grasshopper', hp: 210, speed: 0.28, bite: 24, pts: 3, size: 0.76, hop: true, from: 6, note: 'Hops over the first plant' },
   beetle: { name: 'Beetle', hp: 820, speed: 0.16, bite: 40, pts: 5, size: 0.82, armor: 0.3, from: 8, note: 'Heavily armored' },
-  crow: { name: 'Crow', hp: 170, speed: 0.55, bite: 0, pts: 3, size: 0.82, fly: true, from: 11, note: 'Flies over plants: shoot it down' },
-  mole: { name: 'Mole', hp: 300, speed: 0.26, bite: 34, pts: 4, size: 0.76, dig: true, from: 13, note: 'Tunnels under your first rows' },
   gopher: { name: 'Gopher King', hp: 2600, speed: 0.1, bite: 90, pts: 0, size: 1.3, armor: 0.1, boss: true, note: 'Boss' },
+  // Chapter 2 · Veggie Patch
+  crow: { name: 'Crow', hp: 170, speed: 0.44, bite: 0, pts: 4, size: 0.82, fly: true, from: 11, note: 'Flies over plants: shoot it down' },
+  mole: { name: 'Mole', hp: 300, speed: 0.26, bite: 34, pts: 4, size: 0.76, dig: true, from: 13, note: 'Tunnels under your first rows' },
+  rabbit: { name: 'Rabbit', hp: 320, speed: 0.34, bite: 60, pts: 4, size: 0.86, from: 16, note: 'Fast, and chews plants quickly' },
+  raccoon: { name: 'Raccoon Bandit', hp: 3200, speed: 0.11, bite: 80, pts: 0, size: 1.3, armor: 0.1, boss: true, steal: 12, note: 'Boss · steals sunlight while it chews' },
+  // Chapter 3 · Greenhouse
+  ant: { name: 'Ants', hp: 70, speed: 0.3, bite: 14, pts: 2, size: 0.5, swarm: 3, from: 21, note: 'March in threes' },
+  wasp: { name: 'Wasp', hp: 260, speed: 0.6, bite: 0, pts: 4, size: 0.72, fly: true, from: 24, note: 'Flies over plants, fast' },
+  queenwasp: { name: 'Queen Wasp', hp: 3000, speed: 0.15, bite: 0, pts: 0, size: 1.25, fly: true, boss: true, note: 'Boss · flies over everything' },
+  // Chapter 4 · Orchard
+  squirrel: { name: 'Squirrel', hp: 380, speed: 0.32, bite: 30, pts: 4, size: 0.8, dodge: true, from: 31, note: 'Hops to the next lane when blocked' },
+  deer: { name: 'Deer', hp: 1700, speed: 0.13, bite: 70, pts: 8, size: 1.05, from: 34, note: 'Huge and tough' },
+  badger: { name: 'Old Badger', hp: 5000, speed: 0.09, bite: 110, pts: 0, size: 1.35, armor: 0.35, boss: true, note: 'Boss · thick hide' },
+  // Chapter 5 · Moonlit Garden
+  moth: { name: 'Moths', hp: 200, speed: 0.5, bite: 0, pts: 3, size: 0.66, fly: true, swarm: 2, from: 41, note: 'Flutter in pairs over plants' },
+  hedgehog: { name: 'Hedgehog', hp: 600, speed: 0.18, bite: 35, pts: 5, size: 0.8, curl: true, from: 44, note: 'Curls up when hit (takes much less damage)' },
+  fox: { name: 'Night Fox', hp: 4200, speed: 0.2, bite: 100, pts: 0, size: 1.3, armor: 0.15, boss: true, note: 'Boss · quick on its feet' },
 };
 const DIG_UNTIL = 3; // moles surface at this row
+
+/** Five chapters of 10 stages; boss at every 5th stage (the chapter's own boss). Then endless. */
+export const CHAPTERS = [
+  { name: 'Backyard', from: 1, boss: 'gopher', theme: { a: '#9CCC65', b: '#A8D672', hedge: '#5E8C4A', hedge2: '#4E7A3D', bg: '#6E9E54', dots: 'rgba(255,255,255,0.55)' } },
+  { name: 'Veggie Patch', from: 11, boss: 'raccoon', theme: { a: '#AFC963', b: '#BBD36F', hedge: '#8D6E63', hedge2: '#6D4C41', bg: '#7A9A4C', dots: 'rgba(255,236,179,0.7)', rows: true } },
+  { name: 'Greenhouse', from: 21, boss: 'queenwasp', theme: { a: '#9FD5A8', b: '#B3E0B9', hedge: '#B2DFDB', hedge2: '#80CBC4', bg: '#5FA38A', dots: 'rgba(255,255,255,0.6)', glass: true } },
+  { name: 'Orchard', from: 31, boss: 'badger', theme: { a: '#C3CB6A', b: '#CFD67C', hedge: '#C0843D', hedge2: '#9E6A2C', bg: '#8F8A45', dots: 'rgba(214,105,40,0.75)', leaves: true } },
+  { name: 'Moonlit Garden', from: 41, boss: 'fox', theme: { a: '#4C7457', b: '#557E61', hedge: '#2E4A3A', hedge2: '#243B2E', bg: '#1E3027', dots: 'rgba(255,241,118,0.9)', night: true } },
+];
+export const ENDLESS_FROM = 51;
+
+/** Chapter info for stage n (endless stages cycle through the themes and bosses). */
+export function chapterOf(n) {
+  if (n >= ENDLESS_FROM) {
+    const c = CHAPTERS[Math.floor((n - ENDLESS_FROM) / 10) % CHAPTERS.length];
+    return { ...c, name: 'Wild Garden', index: CHAPTERS.length, from: ENDLESS_FROM, endless: true };
+  }
+  const index = Math.min(CHAPTERS.length - 1, Math.floor((n - 1) / 10));
+  return { ...CHAPTERS[index], index };
+}
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -42,23 +78,32 @@ function rng(seed) {
 /** The waves for stage n (same every time you play it). */
 export function stagePlan(n) {
   const r = rng(n * 9973 + 17);
-  const kinds = Object.keys(PESTS).filter((k) => PESTS[k].from && PESTS[k].from <= n);
+  const ch = chapterOf(n);
+  const kinds = Object.keys(PESTS).filter((k) => !PESTS[k].boss && PESTS[k].from <= n);
+  // This chapter's new pests show up twice as often.
+  const weights = kinds.map((k) => (PESTS[k].from >= ch.from ? 2 : 1));
+  const total = weights.reduce((a, b) => a + b, 0);
+  const pickKind = () => { let x = r() * total; for (let i = 0; i < kinds.length; i++) { x -= weights[i]; if (x <= 0) return kinds[i]; } return kinds[kinds.length - 1]; };
   const waveCount = Math.min(6, 2 + Math.floor((n + 1) / 3));
+  // Gentler growth after chapter 1 so collecting/leveling cards keeps up.
+  const base = 2 + 1.2 * Math.min(n, 10) + 0.7 * Math.max(0, n - 10);
   const waves = [];
   for (let w = 0; w < waveCount; w++) {
-    let budget = Math.round((2 + n * 1.2) * (0.7 + (0.6 * w) / Math.max(1, waveCount - 1)));
+    // The first stage of a chapter eases you in.
+    let budget = Math.round(base * (n === ch.from && n > 1 ? 0.85 : 1) * (0.7 + (0.6 * w) / Math.max(1, waveCount - 1)));
     const list = [];
     while (budget > 0) {
-      const k = kinds[Math.floor(r() * kinds.length)];
+      const k = pickKind();
       if (PESTS[k].pts > budget) { if (budget < 2) { list.push('aphid'); budget--; } continue; }
       list.push(k);
       budget -= PESTS[k].pts;
     }
     waves.push(list);
   }
-  const boss = n % 5 === 0;
-  if (boss) waves[waves.length - 1].push('gopher');
-  return { waves, boss, kinds: boss ? [...kinds, 'gopher'] : kinds, scale: 1 + 0.09 * (n - 1), seed: n };
+  const boss = n % 5 === 0 ? ch.boss : null;
+  if (boss) waves[waves.length - 1].push(boss);
+  const scale = n <= 10 ? 1 + 0.09 * (n - 1) : 1.81 + 0.05 * (n - 10);
+  return { waves, boss, chapter: ch, kinds: boss ? [...kinds, boss] : kinds, scale, seed: n };
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +118,7 @@ const SUN_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="tr
  */
 export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
   const plan = stagePlan(stage);
+  const TH = plan.chapter.theme;
   const G = {
     t: 0, sun: START_SUN + bonusSun, sunTimer: SUN_TICK, lives: LIVES, killed: 0,
     plants: Array.from({ length: COLS }, () => Array(ROWS).fill(null)),
@@ -112,6 +158,7 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
         <button class="btn wide" id="b-quit" type="button">Give up</button></div>
     </div>`;
   const $ = (id) => host.querySelector('#' + id);
+  host.style.background = TH.bg;
   const canvas = $('b-canvas'), ctx = canvas.getContext('2d');
   const trayBtns = [...host.querySelectorAll('.b-card[data-i]')];
   const shovelBtn = host.querySelector('[data-shovel]');
@@ -154,7 +201,9 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
 
   function hurt(p, amount, color) {
     if (p.dead || p.under) return;
-    p.hp -= amount * (1 - (p.def.armor || 0));
+    let dmg = amount * (1 - (p.def.armor || 0));
+    if (p.def.curl) { if (G.t < p.curlUntil) dmg *= 0.35; else p.curlUntil = G.t + 1.5; }
+    p.hp -= dmg;
     p.flash = 0.12;
     if (p.hp <= 0) {
       p.dead = true;
@@ -249,20 +298,23 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
     let col = Math.floor(R() * COLS);
     if (col === G.lastLane && R() < 0.6) col = (col + 1 + Math.floor(R() * (COLS - 1))) % COLS;
     G.lastLane = col;
-    const hp = def.hp * plan.scale * (def.boss ? 1 + 0.15 * Math.floor(stage / 5) : 1);
-    G.pests.push({
-      kind, def, col, y: -0.5, hp, max: hp, slowUntil: 0, slowAmt: 0, frozenUntil: 0, burnUntil: 0, burnDps: 0,
-      eating: null, hopped: false, hop: 0, under: !!def.dig, flash: 0, phase: R() * 6, dead: false,
-    });
+    const hp = def.hp * plan.scale * (def.boss && stage % 10 === 0 ? 1.25 : 1);
+    for (let i = 0; i < (def.swarm || 1); i++) {
+      G.pests.push({
+        kind, def, col, y: -0.5 - i * 0.55, hp, max: hp, slowUntil: 0, slowAmt: 0, frozenUntil: 0, burnUntil: 0, burnDps: 0,
+        eating: null, hopped: false, hop: 0, under: !!def.dig, flash: 0, phase: R() * 6, dead: false,
+        curlUntil: 0, shift: 0, shiftFrom: col, dodges: 0,
+      });
+    }
   }
 
   function startWave() {
     G.wave++;
     G.queue = [...plan.waves[G.wave]].sort(() => R() - 0.5);
-    if (G.queue.includes('gopher')) G.queue = [...G.queue.filter((k) => k !== 'gopher'), 'gopher'];
+    if (plan.boss && G.queue.includes(plan.boss)) G.queue = [...G.queue.filter((k) => k !== plan.boss), plan.boss];
     G.spawnTimer = 0.5;
     const last = G.wave === plan.waves.length - 1;
-    banner(last ? (plan.boss ? 'The Gopher King approaches!' : 'Final wave!') : `Wave ${G.wave + 1} of ${plan.waves.length}`, 2.2);
+    banner(last ? (plan.boss ? `The ${PESTS[plan.boss].name} approaches!` : 'Final wave!') : `Wave ${G.wave + 1} of ${plan.waves.length}`, 2.2);
   }
 
   let bannerTimer = 0;
@@ -383,11 +435,18 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
       if (p.dead) continue;
       const mul = slowMul(p);
       if (p.hop > 0) { p.hop -= dt; p.y += (1.15 / 0.5) * dt; continue; }
+      if (p.shift > 0) { p.shift -= dt; continue; }
+      if (p.def.curl && G.t < p.curlUntil) continue;
       const row = Math.floor(p.y + 0.3);
       const pl = !p.def.fly && !p.under && row >= 0 && row < ROWS ? G.plants[p.col][row] : null;
       if (pl && p.def.hop && !p.hopped) { p.hopped = true; p.hop = 0.5; continue; }
+      if (pl && p.def.dodge && p.dodges < 2) {
+        const open = [p.col - 1, p.col + 1].filter((c) => c >= 0 && c < COLS && !G.plants[c][row]);
+        if (open.length) { p.shiftFrom = p.col; p.col = open[Math.floor(R() * open.length)]; p.shift = 0.35; p.dodges++; p.eating = null; continue; }
+      }
       if (pl) {
         p.eating = pl;
+        if (p.def.steal && mul > 0) G.sun = Math.max(0, G.sun - p.def.steal * dt);
         if (pl.st.eat && pl.chew <= 0) {
           pl.chew = pl.st.chew; pl.kick = 1;
           if (p.def.boss) hurt(p, 500 * (pl.st.thorns / 22), '#7CB342');
@@ -477,18 +536,34 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
     c.clearRect(0, 0, W, Hh);
     const fw = cs * COLS;
     // hedge / spawn strip
-    c.fillStyle = '#5E8C4A';
+    c.fillStyle = TH.hedge;
     c.fillRect(ox, oy - cs * TOP, fw, cs * TOP);
-    c.fillStyle = '#4E7A3D';
+    c.fillStyle = TH.hedge2;
     for (let i = 0; i < 12; i++) { c.beginPath(); c.arc(ox + (i + 0.5) * fw / 12, oy - cs * TOP + cs * 0.18, cs * 0.28, 0, Math.PI * 2); c.fill(); }
     // lawn: lanes alternate shades, rows checkered
     for (let col = 0; col < COLS; col++) for (let row = 0; row < ROWS; row++) {
-      c.fillStyle = (col + row) % 2 ? '#9CCC65' : '#A8D672';
+      c.fillStyle = (col + row) % 2 ? TH.a : TH.b;
       c.fillRect(ox + col * cs, oy + row * cs, cs + 0.5, cs + 0.5);
     }
-    // little flowers in the grass
-    c.fillStyle = 'rgba(255,255,255,0.55)';
-    for (let i = 0; i < 18; i++) { const x = ox + ((i * 53) % 100) / 100 * fw, y = oy + ((i * 37) % 100) / 100 * ROWS * cs; c.beginPath(); c.arc(x, y, cs * 0.03, 0, 7); c.fill(); }
+    if (TH.rows) { c.fillStyle = 'rgba(121,85,72,0.16)'; for (let row = 0; row < ROWS; row++) c.fillRect(ox, oy + row * cs + cs * 0.78, fw, cs * 0.09); }
+    if (TH.glass) {
+      c.save();
+      c.beginPath(); c.rect(ox, oy, fw, ROWS * cs); c.clip();
+      c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = cs * 0.12;
+      for (let i = -3; i < 5; i++) { c.beginPath(); c.moveTo(ox + i * cs * 1.6, oy + ROWS * cs); c.lineTo(ox + i * cs * 1.6 + ROWS * cs * 0.5, oy); c.stroke(); }
+      c.restore();
+    }
+    // little flowers / fallen leaves / fireflies in the grass
+    c.fillStyle = TH.dots;
+    for (let i = 0; i < 18; i++) {
+      const x = ox + ((i * 53) % 100) / 100 * fw, y = oy + ((i * 37) % 100) / 100 * ROWS * cs;
+      c.beginPath();
+      if (TH.night) { c.globalAlpha = 0.45 + 0.55 * Math.abs(Math.sin(G.t * 1.3 + i)); c.arc(x, y + Math.sin(G.t + i) * cs * 0.1, cs * 0.045, 0, 7); }
+      else if (TH.leaves) c.ellipse(x, y, cs * 0.07, cs * 0.035, i, 0, 7);
+      else c.arc(x, y, cs * 0.03, 0, 7);
+      c.fill();
+      c.globalAlpha = 1;
+    }
     // selection hints
     const sel = G.selected >= 0 ? G.cards[G.selected] : null;
     if (sel || G.shovel) {
@@ -540,7 +615,7 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
     }
     // pests
     for (const p of G.pests) {
-      const x = px(p.col), y = py(p.y);
+      const x = p.shift > 0 ? px(p.col) + (px(p.shiftFrom) - px(p.col)) * (p.shift / 0.35) : px(p.col), y = py(p.y);
       if (p.under) {
         c.fillStyle = 'rgba(93,64,55,0.55)';
         for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse(x + Math.sin(i * 2 + G.t * 3) * cs * 0.12, y - i * cs * 0.12, cs * 0.14, cs * 0.08, 0, 0, 7); c.fill(); }
@@ -554,6 +629,7 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
       if (p.def.fly) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.beginPath(); c.ellipse(x, y + size * 0.35, size * 0.3, size * 0.1, 0, 0, 7); c.fill(); }
       c.translate(x, y - lift);
       c.rotate(wob);
+      if (p.def.curl && G.t < p.curlUntil) { c.rotate(G.t * 4); c.scale(0.85, 0.85); }
       const img = imgs['p:' + p.kind];
       if (img.complete) c.drawImage(img, -size / 2, -size / 2, size, size);
       if (p.flash > 0) { c.globalAlpha = 0.5; c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, size * 0.36, 0, 7); c.fill(); c.globalAlpha = 1; }
@@ -706,6 +782,6 @@ export function startBattle({ host, stage, deck, bonusSun = 0, onEnd }) {
 /** Readable summary of a stage for the stage picker. */
 export function stageInfo(n) {
   const p = stagePlan(n);
-  return { waves: p.waves.length, boss: p.boss, pests: p.kinds.map((k) => ({ kind: k, ...PESTS[k] })) };
+  return { waves: p.waves.length, boss: p.boss, chapter: p.chapter, pests: p.kinds.map((k) => ({ kind: k, ...PESTS[k] })) };
 }
 export { esc };

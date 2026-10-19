@@ -284,6 +284,130 @@ const PESTS = {
   mole: () => `<ellipse cx="50" cy="62" rx="26" ry="22" fill="#6D4C41" ${O}/><ellipse cx="50" cy="66" rx="10" ry="8" fill="#F8BBD0" ${O1}/><circle cx="50" cy="60" r="4" fill="#EC407A"/><circle cx="42" cy="52" r="2" fill="${INK}"/><circle cx="58" cy="52" r="2" fill="${INK}"/><path d="M22 74 l-6 6 l4 2 l4 -4 M78 74 l6 6 l-4 2 l-4 -4" fill="#F8BBD0" ${O1}/>`,
   gopher: () => `<ellipse cx="50" cy="60" rx="34" ry="30" fill="#A1887F" ${O}/><ellipse cx="50" cy="70" rx="18" ry="14" fill="#D7CCC8" ${O1}/><path d="M44 74 h12 v8 h-12 Z" fill="#fff" ${O1}/><path d="M50 74 v8" stroke="${INK}" stroke-width="1.2"/>
     ${eyes(50, 50, 18, 6)}<path d="M38 40 l-4 -4 M62 40 l4 -4" ${O}/><path d="M30 26 L36 10 L44 22 L50 6 L56 22 L64 10 L70 26 Z" fill="#FFD54F" ${O}/><circle cx="50" cy="62" r="4" fill="#4E342E"/>`,
+  rabbit: () => {
+    const c = '#A89584', p = '#F8BBD0';
+    return `<ellipse cx="44" cy="70" rx="26" ry="19" fill="${c}" ${O}/><ellipse cx="30" cy="86" rx="13" ry="5" fill="${shade(c, -0.18)}" ${O1}/><circle cx="19" cy="64" r="9" fill="#fff" ${O1}/>
+      <ellipse cx="58" cy="26" rx="6.5" ry="16" transform="rotate(-14 58 26)" fill="${c}" ${O}/><ellipse cx="58" cy="27" rx="3" ry="11" transform="rotate(-14 58 27)" fill="${p}"/>
+      <ellipse cx="75" cy="26" rx="6.5" ry="16" transform="rotate(16 75 26)" fill="${c}" ${O}/><ellipse cx="75" cy="27" rx="3" ry="11" transform="rotate(16 75 27)" fill="${p}"/>
+      <circle cx="66" cy="50" r="16" fill="${c}" ${O}/><ellipse cx="66" cy="57.5" rx="9" ry="6" fill="#F3EBE3" ${O1}/>${eyes(66, 45.5, 12, 4)}
+      <circle cx="54.5" cy="54" r="3" fill="#F48FB1" opacity="0.6"/><circle cx="77.5" cy="54" r="3" fill="#F48FB1" opacity="0.6"/>
+      <path d="M64.4 58.4 h3.2 v3.4 h-3.2 Z M66 58.4 v3.4" fill="#fff" stroke="${INK}" stroke-width="1"/><path d="M66 55.6 v1.8 M62.5 57.4 q1.75 1.8 3.5 0 q1.75 1.8 3.5 0" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="66" cy="54" rx="2.8" ry="2" fill="#EC407A" stroke="${INK}" stroke-width="1.2"/>
+      <ellipse cx="58" cy="87" rx="6" ry="3.8" fill="${c}" ${O1}/><ellipse cx="72" cy="86" rx="6" ry="3.8" fill="${c}" ${O1}/>`;
+  },
+  raccoon: () => {
+    const g = '#9FA3A6', k = '#3A3A3C', w = '#F4F4F4';
+    return `<g transform="rotate(-16 24 84)"><rect x="14" y="30" width="18" height="56" rx="9" fill="${g}"/><path d="M14 39 a9 9 0 0 1 18 0 Z M14 50 h18 v7 h-18 Z M14 65 h18 v7 h-18 Z" fill="${k}"/><rect x="14" y="30" width="18" height="56" rx="9" fill="none" ${O}/></g>
+      <ellipse cx="44" cy="70" rx="22" ry="19" fill="${g}" ${O}/><ellipse cx="44" cy="74" rx="12" ry="12" fill="#DADDDF" ${O1}/>
+      <ellipse cx="34" cy="88" rx="7" ry="4" fill="${k}" ${O1}/><ellipse cx="52" cy="88" rx="7" ry="4" fill="${k}" ${O1}/>
+      <path d="M72 63 C 58 66 58 91 71 91 L81 91 C 94 91 94 66 80 63 Z" fill="#D7B98E" ${O}/><path d="M72 63 L65 52 L71 55 L76 49 L81 55 L87 52 L80 63 Z" fill="#C9A673" ${O1}/><path d="M70 63 h12" stroke="#8D6E63" stroke-width="3.4" stroke-linecap="round"/><path d="M75 74 h8 v8 h-8 Z" fill="#C9A673" stroke="${INK}" stroke-width="1.2" stroke-dasharray="2 1.4"/>
+      <ellipse cx="63" cy="72" rx="5" ry="4" fill="${k}" ${O1}/>
+      <circle cx="30" cy="28" r="7" fill="${g}" ${O}/><circle cx="30" cy="28" r="3.2" fill="${k}"/><circle cx="58" cy="28" r="7" fill="${g}" ${O}/><circle cx="58" cy="28" r="3.2" fill="${k}"/>
+      <circle cx="44" cy="44" r="18" fill="${g}" ${O}/><path d="M30 38 q7 -6 13 -1 M45 37 q6 -5 13 1" fill="none" stroke="${w}" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M27 46 C 29 38 38 38 44 43 C 50 38 59 38 61 46 C 59 53 51 53 44 49 C 37 53 29 53 27 46 Z" fill="${k}"/>${eyes(44, 45, 14, 4)}
+      <ellipse cx="44" cy="55" rx="9" ry="6.5" fill="${w}" ${O1}/><ellipse cx="44" cy="52.5" rx="3.4" ry="2.4" fill="${INK}"/><path d="M40 57 q4 3 9 -1" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M33 29 L36 15 L41 23 L44 11 L47 23 L52 15 L55 29 Z" fill="#FFD54F" ${O}/>`;
+  },
+  ant: () => {
+    const c = '#B5512F';
+    return `<path d="M56 56 L70 64 L80 76 M52 58 L58 72 L57 84 M47 56 L40 66 L33 76" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="28" cy="56" rx="18" ry="15" fill="${c}" ${O}/><path d="M54 60 L64 74 L68 86 M50 62 L48 76 L42 86 M46 60 L40 72 L30 80" fill="none" ${O}/>
+      <ellipse cx="52" cy="55" rx="10" ry="8" fill="${c}" ${O}/><path d="M68 34 Q62 22 54 20 M78 34 Q82 22 90 20" fill="none" ${O}/><circle cx="54" cy="20" r="2.6" fill="${INK}"/><circle cx="90" cy="20" r="2.6" fill="${INK}"/>
+      <circle cx="72" cy="46" r="14" fill="${c}" ${O}/>${eyes(73, 45, 10, 3.8)}<path d="M69 54 q4 3 8 0" fill="none" ${O1}/>${shine(22, 50, 5)}${shine(67, 39, 3)}`;
+  },
+  wasp: () => {
+    const y = '#FFC928';
+    const stripes = [-10, 0, 10].map((x) => { const h = 14 * Math.sqrt(1 - (x / 22) ** 2); return `<path d="M${x} ${-h} Q${x - 3} 0 ${x} ${h}" fill="none" stroke="${INK}" stroke-width="5"/>`; }).join('');
+    return `<ellipse cx="47" cy="34" rx="15" ry="7.5" transform="rotate(42 47 34)" fill="#E3F2FD" fill-opacity="0.7" ${O1}/>
+      <g transform="translate(36 62) rotate(-20)"><path d="M-20 -3 L-31 0 L-20 3 Z" fill="${INK}" ${O1}/><ellipse rx="22" ry="14" fill="${y}"/>${stripes}<ellipse rx="22" ry="14" fill="none" ${O}/></g>
+      <path d="M56 60 l-3 9 M61 61 l0 9 M66 59 l3 8" fill="none" ${O1}/><circle cx="60" cy="52" r="9" fill="#4A3C30" ${O}/>
+      <path d="M69 34 q-3 -10 -10 -12 M77 34 q3 -10 10 -12" fill="none" ${O1}/><circle cx="73" cy="44" r="12" fill="${y}" ${O}/>${eyes(73, 43, 9, 3.4)}<path d="M70 50 q3 2 6 0" fill="none" ${O1}/>
+      <ellipse cx="54" cy="29" rx="16" ry="7.5" transform="rotate(66 54 29)" fill="#E3F2FD" fill-opacity="0.7" ${O1}/>${shine(28, 54, 3)}`;
+  },
+  queenwasp: () => {
+    const y = '#FFC928', p = '#8E5BC2';
+    const stripes = [-12, -1, 10].map((x) => { const h = 17 * Math.sqrt(1 - (x / 26) ** 2); return `<path d="M${x} ${-h} Q${x - 4} 0 ${x} ${h}" fill="none" stroke="${INK}" stroke-width="5.5"/>`; }).join('');
+    return `<ellipse cx="46" cy="34" rx="18" ry="9" transform="rotate(40 46 34)" fill="#EDE3FA" fill-opacity="0.75" ${O1}/>
+      <g transform="translate(40 64) rotate(-20)"><path d="M-23 -4 L-36 0 L-23 4 Z" fill="${INK}" ${O1}/><ellipse rx="26" ry="17" fill="${y}"/>${stripes}<ellipse rx="26" ry="17" fill="none" ${O}/></g>
+      <path d="M58 62 l-3 10 M64 63 l0 10 M70 61 l3 9" fill="none" ${O1}/><circle cx="64" cy="52" r="10.5" fill="${p}" ${O}/>
+      <path d="M70 34 q-4 -8 -11 -9 M82 34 q4 -8 11 -9" fill="none" ${O1}/><circle cx="76" cy="46" r="13" fill="${y}" ${O}/>${eyes(76, 46, 10, 3.8)}
+      <path d="M69 43 l-2 -2 M83 43 l2 -2" fill="none" ${O1}/><path d="M73 53 q3 2 6 0" fill="none" ${O1}/>
+      <ellipse cx="55" cy="28" rx="18" ry="8.5" transform="rotate(64 55 28)" fill="#EDE3FA" fill-opacity="0.75" ${O1}/>
+      <path d="M66 35 L68 21 L72 28 L76 17 L80 28 L84 21 L86 35 Z" fill="#FFD54F" ${O}/><circle cx="76" cy="30" r="2.2" fill="${p}"/>${shine(30, 55, 3.5)}`;
+  },
+  squirrel: () => {
+    const c = '#E2733A', l = '#FFE3C2';
+    return `<path d="M46 84 C 22 88 8 70 10 50 C 12 28 30 14 46 20 C 58 24 58 40 46 40 C 38 40 34 46 36 56 C 38 66 42 74 46 84 Z" fill="${shade(c, 0.1)}" ${O}/>
+      <path d="M22 70 C 16 56 20 38 32 30" fill="none" stroke="${shade(c, 0.45)}" stroke-width="2.4" stroke-linecap="round"/>
+      <ellipse cx="58" cy="70" rx="17" ry="18" fill="${c}" ${O}/><ellipse cx="62" cy="73" rx="9" ry="12" fill="${l}" ${O1}/><ellipse cx="54" cy="88" rx="10" ry="4" fill="${c}" ${O1}/>
+      <path d="M70 34 L75 20 L78 35 Z" fill="${c}" ${O1}/><circle cx="64" cy="44" r="15" fill="${c}" ${O}/><path d="M53 36 L53 18 L63 30 Z" fill="${c}" ${O}/><path d="M55 32 L55 23 L60 30 Z" fill="${l}"/>
+      <ellipse cx="68" cy="52" rx="8" ry="6" fill="${l}" ${O1}/>${eyes(66, 42, 11, 3.6)}<ellipse cx="68" cy="49" rx="2.4" ry="1.8" fill="${INK}"/>
+      <ellipse cx="76" cy="68" rx="6" ry="7" fill="#C89B6D" ${O1}/><path d="M69 64 C 69 57 83 57 83 64 Z" fill="#7B5139" ${O1}/><path d="M76 58 v-4" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="70" cy="67" rx="3.6" ry="3" fill="${c}" ${O1}/><ellipse cx="82" cy="69" rx="3.6" ry="3" fill="${c}" ${O1}/>`;
+  },
+  deer: () => {
+    const c = '#C4864E', l = '#F6E6CF', a = '#E3C9A0';
+    const antler = (d) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${a}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const ear = `<path d="M32 42 C 20 40 10 32 10 26 C 18 24 30 30 36 36 Z" fill="${c}" ${O}/><path d="M30 39 C 22 37 16 32 15 29 C 21 29 28 33 32 36 Z" fill="#F8BBD0"/>`;
+    return `${antler('M41 26 L37 10 M38.5 16 L29 11 M39.5 20 L46 14')}${antler('M59 26 L63 10 M61.5 16 L71 11 M60.5 20 L54 14')}
+      <path d="M20 92 C 20 76 34 68 50 68 C 66 68 80 76 80 92 Z" fill="${c}" ${O}/><path d="M40 70 C 42 84 58 84 60 70 Z" fill="${l}" ${O1}/>
+      <g fill="${l}"><circle cx="28" cy="84" r="2.2"/><circle cx="33" cy="77" r="2"/><circle cx="72" cy="84" r="2.2"/><circle cx="67" cy="77" r="2"/></g>
+      ${ear}<g transform="translate(100 0) scale(-1 1)">${ear}</g>
+      <path d="M50 22 C 64 22 72 34 70 50 C 68 62 60 70 50 70 C 40 70 32 62 30 50 C 28 34 36 22 50 22 Z" fill="${c}" ${O}/>
+      <ellipse cx="50" cy="61" rx="11" ry="8.5" fill="${l}" ${O1}/><ellipse cx="50" cy="57" rx="4.6" ry="3.2" fill="${INK}"/><path d="M46 64 q4 3 8 0" fill="none" ${O1}/>
+      ${eyes(50, 45, 16, 5.2)}<circle cx="37" cy="54" r="3.4" fill="#F48FB1" opacity="0.5"/><circle cx="63" cy="54" r="3.4" fill="#F48FB1" opacity="0.5"/>${shine(42, 31, 3.5)}`;
+  },
+  badger: () => {
+    const g = '#8F9296', k = '#2F2C2A', w = '#F7F5F0';
+    const head = 'M50 82 C 36 82 24 64 26 48 C 28 36 38 30 50 30 C 62 30 72 36 74 48 C 76 64 64 82 50 82 Z';
+    return `<ellipse cx="50" cy="72" rx="37" ry="19" fill="${g}" ${O}/><path d="M22 64 l4 -4 M76 60 l4 4 M18 74 l4 -3 M80 71 l4 3" stroke="${shade(g, 0.35)}" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="27" cy="88" rx="10" ry="5" fill="${k}" ${O1}/><ellipse cx="73" cy="88" rx="10" ry="5" fill="${k}" ${O1}/>
+      <circle cx="30" cy="36" r="6.5" fill="${w}" ${O}/><circle cx="30" cy="36" r="3.4" fill="${k}"/><circle cx="70" cy="36" r="6.5" fill="${w}" ${O}/><circle cx="70" cy="36" r="3.4" fill="${k}"/>
+      <path d="${head}" fill="${w}"/><path d="M36 33 C 42 32 46 38 46 46 C 46 58 48 68 49 76 C 42 70 36 62 34 52 C 33 44 32 35 36 33 Z M64 33 C 58 32 54 38 54 46 C 54 58 52 68 51 76 C 58 70 64 62 66 52 C 67 44 68 35 64 33 Z" fill="${k}"/><path d="${head}" fill="none" ${O}/>
+      <path d="M34 42 q5 -4 11 0 M55 42 q5 -4 11 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>${eyes(50, 49, 20, 4.2)}
+      <ellipse cx="50" cy="73" rx="5.5" ry="3.8" fill="${INK}"/><path d="M46 78 q4 2 8 0" fill="none" ${O1}/>
+      <path d="M39 32 L42 18 L46 26 L50 14 L54 26 L58 18 L61 32 Z" fill="#FFD54F" ${O}/>`;
+  },
+  moth: () => {
+    const w = '#C9B6E8', cr = '#F4E6C8', b = '#F1E3C4';
+    const half = `<path d="M48 46 C 34 18 12 16 10 32 C 8 48 30 56 48 52 Z" fill="${w}" ${O}/><path d="M48 56 C 32 56 18 66 24 80 C 30 90 46 76 48 62 Z" fill="${cr}" ${O}/>
+      <circle cx="27" cy="36" r="6.5" fill="${cr}" ${O1}/><circle cx="27" cy="36" r="2.8" fill="#8E6FC0"/><path d="M15 44 q10 6 24 4" fill="none" stroke="${shade(w, -0.22)}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="33" cy="72" r="3.2" fill="${w}" ${O1}/><path d="M48.5 26 C 44 20 38 13 31 9 C 36 15 42 21 46.5 27.5 Z" fill="${cr}" ${O1}/>`;
+    let fuzz = '';
+    for (let i = 0; i < 12; i++) {
+      const a = (i + 1) * Math.PI / 6;
+      fuzz += `${i ? '' : `M${50 + 10} 44 `}A3 3 0 0 1 ${(50 + 10 * Math.cos(a)).toFixed(2)} ${(44 + 10 * Math.sin(a)).toFixed(2)} `;
+    }
+    return `${half}<g transform="translate(100 0) scale(-1 1)">${half}</g>
+      <ellipse cx="50" cy="63" rx="7" ry="15" fill="${b}" ${O}/><path d="M44 60 q6 3 12 0 M44 67 q6 3 12 0" fill="none" stroke="${shade(b, -0.25)}" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="${fuzz}Z" fill="${shade(b, 0.3)}" ${O1}/><circle cx="50" cy="31" r="7.5" fill="${b}" ${O}/>${eyes(50, 31, 7, 2.6)}`;
+  },
+  hedgehog: () => {
+    const sp = '#6D4C41', b = '#8D6E63', f = '#F2D7B0';
+    let s = '';
+    for (let i = 0; i < 15; i++) {
+      const a = (160 + (i * 220) / 14) * Math.PI / 180, d = 9 * Math.PI / 180;
+      const P = (r, t) => `${(50 + r * Math.cos(t)).toFixed(2)} ${(58 + r * Math.sin(t)).toFixed(2)}`;
+      s += `<path d="M${P(25, a - d)} L${P(38, a)} L${P(25, a + d)} Z" fill="${i % 2 ? sp : shade(sp, -0.18)}" ${O1}/>`;
+    }
+    return `${s}<circle cx="50" cy="58" r="28" fill="${b}" ${O}/><path d="M32 46 l4 -3 M66 44 l4 3 M40 36 l3 -3 M58 35 l3 3" stroke="${shade(b, -0.3)}" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="38" cy="86" rx="7" ry="4" fill="${f}" ${O1}/><ellipse cx="62" cy="86" rx="7" ry="4" fill="${f}" ${O1}/>
+      <circle cx="36" cy="51" r="5" fill="${f}" ${O1}/><circle cx="64" cy="51" r="5" fill="${f}" ${O1}/><ellipse cx="50" cy="65" rx="19" ry="15" fill="${f}" ${O1}/>
+      ${eyes(50, 61, 14, 4)}<ellipse cx="50" cy="69" rx="3.6" ry="2.6" fill="${INK}"/><path d="M46 73 q4 3 8 0" fill="none" ${O1}/>
+      <circle cx="38" cy="69" r="3" fill="#F48FB1" opacity="0.55"/><circle cx="62" cy="69" r="3" fill="#F48FB1" opacity="0.55"/>`;
+  },
+  fox: () => {
+    const c = '#EE7B30', w = '#FFF6EA', blue = '#4F5D95';
+    const head = 'M22 42 C 24 30 38 26 50 26 C 62 26 76 30 78 42 C 76 54 62 68 50 70 C 38 68 24 54 22 42 Z';
+    const eye = (x) => `<path d="M${x - 5} 45 Q${x} 52 ${x + 5} 45 Z" fill="#fff" ${O1}/><circle cx="${x + 1.6}" cy="46.8" r="2" fill="${INK}"/><path d="M${x - 5.5} 44.6 L${x + 5.5} 45.4" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`;
+    return `<path d="M60 88 C 86 94 98 72 90 52 C 86 42 74 40 70 48 C 78 56 78 72 60 76 Z" fill="${c}" ${O}/><path d="M90 52 C 86 42 74 40 70 48 C 73 51 75 53 76 56 L80 54 L83 58 L87 55 L91 58 Z" fill="${w}" ${O1}/>
+      <path d="M32 90 C 28 72 36 60 50 60 C 64 60 72 72 68 90 Z" fill="${c}" ${O}/><path d="M39 64 C 40 80 46 88 50 88 C 54 88 60 80 61 64 Z" fill="${w}" ${O1}/>
+      <ellipse cx="42" cy="90" rx="6" ry="3.6" fill="${w}" ${O1}/><ellipse cx="58" cy="90" rx="6" ry="3.6" fill="${w}" ${O1}/>
+      <path d="M33 61 C 42 67 58 67 67 61 L68 67 C 58 74 42 74 32 67 Z" fill="${blue}" ${O1}/><path d="M58 70 L62 80 L67 74 Z" fill="${blue}" ${O1}/>
+      <path d="M28 38 L25 12 L46 28 Z" fill="${c}" ${O}/><path d="M30 33 L28 19 L39 28 Z" fill="#5D4037"/><path d="M72 38 L75 12 L54 28 Z" fill="${c}" ${O}/><path d="M70 33 L72 19 L61 28 Z" fill="#5D4037"/>
+      <path d="${head}" fill="${c}"/><path d="M23 44 C 34 46 44 51 50 57 C 56 51 66 46 77 44 C 74 54 62 68 50 70 C 38 68 26 54 23 44 Z" fill="${w}" ${O1}/><path d="${head}" fill="none" ${O}/>
+      ${eye(40)}${eye(60)}<ellipse cx="50" cy="62" rx="3.6" ry="2.6" fill="${INK}"/><path d="M45 66 q5 3 10 -1" fill="none" ${O1}/>
+      <path d="M39 28 L41 14 L46 22 L50 10 L54 22 L59 14 L61 28 Z" fill="#FFD54F" ${O}/>`;
+  },
 };
 
 // ---------------------------------------------------------------------------

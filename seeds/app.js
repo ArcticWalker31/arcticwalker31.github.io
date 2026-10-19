@@ -1,11 +1,11 @@
 // app.js — Seed Pack screens: garden, battle, packs, cards, the pack-opening
 // show, sheets and settings. Game rules live in state.js / cards.js.
 
-import * as St from './state.js?v=2';
-import { CARD, CARDS, RARITIES, RARITY_ORDER, TYPES, ROLE_NAMES, MAX_LEVEL, harvestCoins, harvestXp, seedCost, growMinutes, battleStats } from './cards.js?v=2';
-import { cardSvg, cardArt, stageArt, pestArt, packetSvg } from './art.js?v=2';
-import { startBattle, stageInfo, PESTS } from './battle.js?v=2';
-import { sfx, isMuted, setMuted } from './sound.js?v=2';
+import * as St from './state.js?v=3';
+import { CARD, CARDS, RARITIES, RARITY_ORDER, TYPES, ROLE_NAMES, MAX_LEVEL, harvestCoins, harvestXp, seedCost, growMinutes, battleStats } from './cards.js?v=3';
+import { cardSvg, cardArt, stageArt, pestArt, packetSvg } from './art.js?v=3';
+import { startBattle, stageInfo, PESTS, CHAPTERS, ENDLESS_FROM } from './battle.js?v=3';
+import { sfx, isMuted, setMuted } from './sound.js?v=3';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -686,6 +686,27 @@ function statsHTML(card, level) {
   return `<dl class="stats">${rows.join('')}</dl>`;
 }
 
+/** Full deck: show the 8 deck cards so the player picks which one `id` replaces. */
+function swapHTML(id) {
+  return `<p class="fine">Your deck is full. Tap the card that <b>${esc(CARD[id].name)}</b> should replace.</p>
+    <div class="swap-grid">${S().deck.map((x) => cardHTML(CARD[x])).join('')}</div>
+    <button class="btn wide" type="button" data-swap-cancel style="margin-top:14px">Cancel</button>`;
+}
+/** Handles a tap inside the swap view. Returns true if it was handled. */
+function onSwapClick(e, id, back) {
+  const pick = e.target.closest('.swap-grid [data-card]');
+  if (pick) {
+    const out = pick.dataset.card;
+    St.setDeck(S().deck.map((x) => (x === out ? id : x)));
+    sfx('place');
+    toast(`${CARD[id].name} swapped in for ${CARD[out].name}.`);
+    back();
+    return true;
+  }
+  if (e.target.closest('[data-swap-cancel]')) { sfx('tap'); back(); return true; }
+  return false;
+}
+
 function openCard(id) {
   const card = CARD[id];
   St.markSeen(id);
@@ -704,10 +725,11 @@ function openCard(id) {
         : `<button class="btn ${inDeck ? '' : 'primary'} wide" type="button" data-deck-toggle>${inDeck ? 'Remove from deck' : 'Add to deck'}</button>`}`;
   };
   openSheet(card.name, draw(), (e) => {
+    if (onSwapClick(e, id, () => setSheet(draw()))) return;
     if (e.target.closest('[data-deck-toggle]')) {
       const d = S().deck;
       if (d.includes(id)) St.setDeck(d.filter((x) => x !== id));
-      else if (d.length >= St.DECK_SIZE) return toast('Your deck is full (8). Remove a card first.', true);
+      else if (d.length >= St.DECK_SIZE) { sfx('tap'); setSheet(swapHTML(id)); $('sheet').scrollTop = 0; return; }
       else St.setDeck([...d, id]);
       sfx('tap');
       setSheet(draw());
@@ -725,63 +747,111 @@ function openCard(id) {
   }, () => render());
 }
 
+const DECK_FILTERS = [['all', 'All'], ['sun', 'Sun-makers'], ['shooter', 'Shooters'], ['wall', 'Walls'], ['support', 'Healers'],
+  ['slow', 'Slowers'], ['trap', 'Traps'], ['bomb', 'Bombs'], ['tool', 'Tools'], ['weather', 'Weather']];
+const deckCat = (c) => (c.type === 'plant' ? c.role : c.type);
+let deckFilter = 'all';
+
 function openDeckEditor() {
   const draw = () => {
     const d = S().deck;
-    const list = St.ownedCards().filter((c) => c.type !== 'decor')
+    const all = St.ownedCards().filter((c) => c.type !== 'decor');
+    const counts = {};
+    for (const c of all) counts[deckCat(c)] = (counts[deckCat(c)] || 0) + 1;
+    if (deckFilter !== 'all' && !counts[deckFilter]) deckFilter = 'all';
+    const list = all.filter((c) => deckFilter === 'all' || deckCat(c) === deckFilter)
       .sort((a, b) => (d.includes(b.id) - d.includes(a.id)) || battleStats(a, 1).cost - battleStats(b, 1).cost);
+    const chips = DECK_FILTERS.filter(([k]) => k === 'all' || counts[k])
+      .map(([k, label]) => `<button type="button" data-dfilter="${k}" aria-pressed="${deckFilter === k}">${label}${k === 'all' ? '' : ` ${counts[k]}`}</button>`).join('');
     return `<p class="fine">${d.length} / ${St.DECK_SIZE} cards. Mix sun-makers, shooters, walls and a spell or two.</p>${deckStrip()}
-      <ul class="pick-list" style="margin-top:12px">${list.map((c) => `<li><button class="pick r-${c.rarity}${d.includes(c.id) ? ' on' : ''}" type="button" data-toggle="${c.id}">
+      <div class="filters" role="group" aria-label="Filter by type" style="margin:12px 0 10px">${chips}</div>
+      <ul class="pick-list">${list.map((c) => `<li><button class="pick r-${c.rarity}${d.includes(c.id) ? ' on' : ''}" type="button" data-toggle="${c.id}">
         <span class="pk-art">${cardSvg(c)}</span><span><b>${esc(c.name)} <small>Lv ${St.cardLevel(c.id)}</small></b>
         <small>${c.type === 'plant' ? ROLE_NAMES[c.role] : TYPES[c.type]} · ☀ ${battleStats(c, 1).cost}</small></span>
         <span class="pk-cost">${d.includes(c.id) ? '✓' : '+'}</span></button></li>`).join('')}</ul>`;
   };
+  let swapping = null, keepY = 0;
+  const back = () => { swapping = null; setSheet(draw()); $('sheet').scrollTop = keepY; };
   openSheet('Battle deck', draw(), (e) => {
+    if (swapping) { onSwapClick(e, swapping, back); return; }
+    const f = e.target.closest('[data-dfilter]');
+    if (f) { deckFilter = f.dataset.dfilter; sfx('tap'); setSheet(draw()); return; }
     const t = e.target.closest('[data-toggle], .deck-strip [data-card]');
     if (!t) return;
     const id = t.dataset.toggle || t.dataset.card;
     const d = S().deck;
+    const y = $('sheet').scrollTop;
     if (d.includes(id)) St.setDeck(d.filter((x) => x !== id));
-    else if (d.length >= St.DECK_SIZE) return toast('Deck is full. Tap a card in it to take it out.', true);
+    else if (d.length >= St.DECK_SIZE) { swapping = id; keepY = y; sfx('tap'); setSheet(swapHTML(id)); $('sheet').scrollTop = 0; return; }
     else St.setDeck([...d, id]);
     sfx('tap');
     setSheet(draw());
+    $('sheet').scrollTop = y;
   }, () => render());
 }
 
 // ---------------------------------------------------------------------------
-// Battle tab
+// Battle tab: chapters of 10 stages, then endless
 // ---------------------------------------------------------------------------
+const pestChip = (p) => `<span class="pest-chip${p.boss ? ' boss' : ''}" title="${esc(p.note || '')}">${svg100(pestArt(p.kind))}${esc(p.name)}</span>`;
+/** This chapter's pests (and the boss) get chips; older ones are summed up. */
 function pestChips(info) {
-  return `<div class="pest-row">${info.pests.map((p) => `<span class="pest-chip${p.boss ? ' boss' : ''}" title="${esc(p.note || '')}">${svg100(pestArt(p.kind))}${esc(p.name)}</span>`).join('')}</div>`;
+  const ch = info.chapter;
+  const fresh = info.pests.filter((p) => p.boss || ch.endless || p.from >= ch.from);
+  const old = info.pests.length - fresh.length;
+  return `<div class="pest-row">${fresh.map(pestChip).join('')}${old ? `<span class="pest-chip more">+${old} familiar pest${old > 1 ? 's' : ''}</span>` : ''}</div>`;
 }
 function rewardLine(stage, first) {
   const r = St.battleReward(stage, first);
   return `<div class="reward-line"><span>${coin(r.coins)}</span><span>+${r.xp} XP</span>${r.pack ? `<span>${packetMini(r.pack)} ${St.PACKS[r.pack].name}</span>` : ''}</div>`;
+}
+const chapterLabel = (ch) => (ch.endless ? 'Endless · Wild Garden' : `Chapter ${ch.index + 1} · ${ch.name}`);
+const swatch = (theme) => `<span class="ch-swatch" style="background:${theme.a};border-color:${theme.hedge}"></span>`;
+
+function stageGrid(from, to, cleared, next) {
+  let h = '<div class="stage-list">';
+  for (let n = from; n <= to; n++) {
+    const cls = n <= cleared ? 'cleared' : n === next ? 'next' : '';
+    h += `<button class="stage-btn ${cls}${n % 5 === 0 ? ' boss' : ''}" type="button" data-stage="${n}" ${n > next ? 'disabled' : ''}>${n}</button>`;
+  }
+  return h + '</div>';
 }
 
 function renderBattleTab() {
   const s = S();
   const next = s.stage + 1;
   const info = stageInfo(next);
+  const ch = info.chapter;
   let h = `<div class="panel stage-hero">
-    <small class="fine" style="margin:0">Optional · defend your garden from pests</small>
-    <h2>Stage ${next}${info.boss ? ' · Boss' : ''}</h2>
-    <span class="fine" style="margin:0">${info.waves} waves</span>
+    <small class="ch-label">${swatch(ch.theme)}${chapterLabel(ch)}</small>
+    <h2>Stage ${next}${info.boss ? ` · ${esc(PESTS[info.boss].name)}` : ''}</h2>
+    <span class="fine" style="margin:0">${info.waves} waves · optional</span>
     ${pestChips(info)}
     <div><small class="fine">First-clear reward</small>${rewardLine(next, true)}</div>
     <button class="btn primary wide" type="button" data-play="${next}">Defend the garden</button>
   </div>`;
   h += `<div class="section-head"><h2>Your deck</h2><button class="btn small" type="button" data-edit-deck>Edit</button></div>${deckStrip()}`;
-  const newPests = Object.entries(PESTS).filter(([, p]) => p.from === next && p.from > 1);
-  if (newPests.length) h += `<p class="fine">New pest: <b>${esc(newPests[0][1].name)}</b>. ${esc(newPests[0][1].note || '')}</p>`;
-  const shown = Math.max(10, Math.ceil((next + 1) / 5) * 5);
-  h += `<div class="section-head"><h2>Stages</h2><small>Replay for ${Math.round(0.4 * 100)}% rewards</small></div><div class="stage-list">`;
-  for (let n = 1; n <= shown; n++) {
-    const cls = n <= s.stage ? 'cleared' : n === next ? 'next' : '';
-    h += `<button class="stage-btn ${cls}${n % 5 === 0 ? ' boss' : ''}" type="button" data-stage="${n}" ${n > next ? 'disabled' : ''}>${n}</button>`;
-  }
-  h += '</div>';
+  const newPests = Object.values(PESTS).filter((p) => p.from === next && p.from > 1);
+  if (newPests.length) h += `<p class="fine">New pest: <b>${esc(newPests[0].name)}</b>. ${esc(newPests[0].note || '')}</p>`;
+
+  h += `<div class="section-head"><h2>Chapters</h2><small>Replays give 40% rewards</small></div>`;
+  CHAPTERS.forEach((c, i) => {
+    const from = c.from, to = from + 9;
+    const done = Math.max(0, Math.min(10, s.stage - from + 1));
+    const head = `<div class="ch-head">${swatch(c.theme)}<b>Chapter ${i + 1} · ${c.name}</b><small>${done === 10 ? '✓ 10/10' : `${done}/10`}</small></div>`;
+    if (next < from) {
+      const teaser = Object.entries(PESTS).filter(([, p]) => p.from >= from && p.from <= to).map(([k, p]) => ({ kind: k, ...p }));
+      teaser.push({ kind: c.boss, ...PESTS[c.boss] });
+      h += `<div class="chapter locked">${head}<p class="fine">Beat stage ${from - 1} to unlock.${teaser.length > 1 ? ' New here:' : ''}</p><div class="pest-row">${teaser.map(pestChip).join('')}</div></div>`;
+    } else if (next <= to) {
+      h += `<div class="chapter current">${head}${stageGrid(from, to, s.stage, next)}</div>`;
+    } else {
+      h += `<details class="chapter"><summary>${head}</summary>${stageGrid(from, to, s.stage, next)}</details>`;
+    }
+  });
+  const endHead = `<div class="ch-head">${swatch({ a: '#D7CCC8', hedge: '#8D6E63' })}<b>Endless · Wild Garden</b><small>${Math.max(0, s.stage - ENDLESS_FROM + 1)} cleared</small></div>`;
+  if (next < ENDLESS_FROM) h += `<div class="chapter locked">${endHead}<p class="fine">Beat stage ${ENDLESS_FROM - 1} to unlock never-ending stages with every pest and boss.</p></div>`;
+  else h += `<div class="chapter current">${endHead}${stageGrid(ENDLESS_FROM, Math.max(ENDLESS_FROM + 9, Math.ceil(next / 10) * 10), s.stage, next)}</div>`;
   $('view-battle').innerHTML = h;
 }
 
@@ -794,7 +864,7 @@ $('view-battle').addEventListener('click', (e) => {
     const n = +st.dataset.stage;
     if (n === S().stage + 1) return playStage(n);
     const info = stageInfo(n);
-    openSheet(`Stage ${n}${info.boss ? ' · Boss' : ''}`, `<div class="stage-hero"><span class="fine">${info.waves} waves · cleared ✓</span>${pestChips(info)}
+    openSheet(`Stage ${n}${info.boss ? ' · Boss' : ''}`, `<div class="stage-hero"><small class="ch-label">${swatch(info.chapter.theme)}${chapterLabel(info.chapter)}</small><span class="fine">${info.waves} waves · cleared ✓</span>${pestChips(info)}
       <div><small class="fine">Replay reward</small>${rewardLine(n, false)}</div>
       <button class="btn primary wide" type="button" data-go>Play again</button></div>`, (ev) => {
       if (ev.target.closest('[data-go]')) { closeSheet(); playStage(n); }

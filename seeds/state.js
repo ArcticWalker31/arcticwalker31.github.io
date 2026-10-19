@@ -10,7 +10,7 @@ import { gistClient } from '../shared/gist.js?v=6';
 import {
   CARD, CARDS, RARITIES, RARITY_ORDER, LEVEL_COPIES, MAX_LEVEL, levelMult,
   harvestCoins, harvestXp, seedCost, growMinutes,
-} from './cards.js?v=2';
+} from './cards.js?v=3';
 
 const KEY = 'sp.save';
 const META = 'sp.meta';
@@ -543,7 +543,8 @@ export function battleReward(stage, first) {
   return {
     coins: Math.round((60 + 25 * stage) * k),
     xp: Math.round((15 + 6 * stage) * k),
-    pack: first ? (stage % 5 === 0 ? 'bundle' : stage % 3 === 0 ? 'basic' : null) : null,
+    // Chapter bosses (every 10th) give a Golden Pack, mid-chapter bosses a Bundle.
+    pack: first ? (stage % 10 === 0 ? 'golden' : stage % 5 === 0 ? 'bundle' : stage % 3 === 0 ? 'basic' : null) : null,
   };
 }
 
