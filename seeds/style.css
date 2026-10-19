@@ -237,6 +237,7 @@ code { font-size: 0.85em; background: var(--paper-2); padding: 1px 5px; border-r
   background: var(--card); box-shadow: 0 3px 0 color-mix(in srgb, var(--rc) 60%, #000 0%);
   cursor: pointer; text-align: center;
 }
+.r-common { --rc: var(--r-common); }
 .r-uncommon { --rc: var(--r-uncommon); }
 .r-rare { --rc: var(--r-rare); }
 .r-epic { --rc: var(--r-epic); }

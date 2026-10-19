@@ -72,9 +72,10 @@ function cardHTML(card, { tag = 'button', extra = '' } = {}) {
 // ---------------------------------------------------------------------------
 const sheetQueue = [];
 let sheetHandler = null, sheetOnClose = null;
-function openSheet(title, html, onClick, onClose) {
+/** `over`: open on top of the pack-opening show (otherwise sheets wait until it's done). */
+function openSheet(title, html, onClick, onClose, over = false) {
   const d = $('sheet');
-  if (d.open || !$('opening').hidden) { sheetQueue.push([title, html, onClick, onClose]); return; }
+  if (d.open || (!over && !$('opening').hidden)) { sheetQueue.push([title, html, onClick, onClose]); return; }
   $('sheet-title').textContent = title;
   $('sheet-content').innerHTML = html;
   sheetHandler = onClick || null;
@@ -553,7 +554,7 @@ function openPackFlow(kind) {
     const more = S().packs[kind];
     const news = res.results.filter((r) => r.isNew).length;
     const ups = res.results.filter((r) => !r.isNew && r.levelAfter > r.levelBefore).length;
-    L.querySelector('.o-foot').innerHTML = `<p class="o-hint">${[news && `${news} new card${news > 1 ? 's' : ''}`, ups && `${ups} level-up${ups > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Nice haul!'}</p>
+    L.querySelector('.o-foot').innerHTML = `<p class="o-hint">${[news && `${news} new card${news > 1 ? 's' : ''}`, ups && `${ups} level-up${ups > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Nice haul!'} · tap a card to see what it does</p>
       <div class="row" style="justify-content:center">${more ? `<button class="btn" type="button" data-again>Open another (${more})</button>` : ''}<button class="btn primary" type="button" data-done>Done</button></div>`;
     const skip = L.querySelector('[data-skip]');
     if (skip) skip.hidden = true;
@@ -582,7 +583,8 @@ function openPackFlow(kind) {
       return;
     }
     const f = t.closest('[data-flip]');
-    if (f) return flip(f);
+    // A flipped card opens its details right here; an unflipped one flips.
+    if (f) return f.classList.contains('up') ? openCard(res.results[+f.dataset.flip].card.id, { over: true }) : flip(f);
     if (t.closest('[data-flipall]')) {
       const best = res.results.reduce((a, r) => Math.max(a, RARITY_ORDER.indexOf(r.card.rarity)), 0);
       document.querySelectorAll('#o-cards [data-flip]').forEach((el, i) => setTimeout(() => flip(el, true), i * 110));
@@ -707,7 +709,7 @@ function onSwapClick(e, id, back) {
   return false;
 }
 
-function openCard(id) {
+function openCard(id, { over = false } = {}) {
   const card = CARD[id];
   St.markSeen(id);
   const draw = () => {
@@ -741,10 +743,10 @@ function openCard(id) {
       St.setDecor(slot, id);
       sfx('place');
       closeSheet();
-      showTab('garden');
+      if (!over) showTab('garden');
       toast(`${card.name} placed in decor slot ${slot + 1}.`);
     }
-  }, () => render());
+  }, () => render(), over);
 }
 
 const DECK_FILTERS = [['all', 'All'], ['sun', 'Sun-makers'], ['shooter', 'Shooters'], ['wall', 'Walls'], ['support', 'Healers'],
