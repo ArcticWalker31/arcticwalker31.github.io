@@ -1,13 +1,13 @@
 // app.js — Campus: tabs, rendering and refresh timers.
 // Data comes from bt.js (buses), gym.js (RecSports) and dining.js.
 
-import { store, hasRelay, getRelay, NeedsRelay, clock, inTime, distanceM, fmtDistance, getPosition, esc } from './util.js';
-import * as BT from './bt.js';
-import * as Gym from './gym.js';
-import { getDining, groupByHall } from './dining.js';
-import * as BTU from './bt4u.js';
-import { planDirect, stopsNear, candidateRoutes, searchPlaces, splitTrip } from './planner.js';
-import { icon } from './icons.js';
+import { store, hasRelay, getRelay, NeedsRelay, clock, inTime, distanceM, fmtDistance, getPosition, esc } from './util.js?v=2';
+import * as BT from './bt.js?v=2';
+import * as Gym from './gym.js?v=2';
+import { getDining, groupByHall } from './dining.js?v=2';
+import * as BTU from './bt4u.js?v=2';
+import { planDirect, stopsNear, candidateRoutes, searchPlaces, splitTrip } from './planner.js?v=2';
+import { icon } from './icons.js?v=2';
 
 const $ = (id) => document.getElementById(id);
 const TITLES = { bus: 'Buses', gym: 'Gym', dining: 'Dining' };
@@ -776,10 +776,16 @@ let diningOpen = new Set(store.get('diningOpen', [])); // expanded hall keys
 let lastVenues = null;
 
 async function refreshDining() {
+  if (!$('dining-list').innerHTML) $('dining-list').innerHTML = '<p class="empty">Loading dining hours…</p>';
   try {
     lastVenues = await getDining();
   } catch (err) {
-    if (!$('dining-list').innerHTML) $('dining-list').innerHTML = `<p class="empty">Couldn’t load dining hours (${esc(err.message)}).</p>`;
+    if (!lastVenues) {
+      $('dining-summary').textContent = '';
+      $('dining-list').innerHTML = `<p class="empty">VT’s dining hours site isn’t responding (${esc(err.message)}), so there are no hours to show right now.
+        It’s VT’s server, not your connection. The app keeps trying, and once it’s back it saves a week ahead so this won’t go blank again.
+        <br><a href="https://dining.vt.edu/" target="_blank" rel="noopener">dining.vt.edu</a></p>`;
+    }
     markUpdated('dining', 'Offline');
     return;
   }
@@ -831,9 +837,9 @@ function renderDining() {
   const now = Date.now();
   const venues = lastVenues;
   const openCount = venues.filter((v) => v.state === 'open').length;
-  $('dining-summary').textContent = venues.length
+  $('dining-summary').textContent = (venues.length
     ? `${openCount} of ${venues.length} places open right now`
-    : 'Nothing is scheduled to open today.';
+    : 'Nothing is scheduled to open today.') + (venues.stale ? ' · VT’s hours site is down, showing saved hours' : '');
 
   const halls = groupByHall(venues);
   const near = diningSort === 'nearest' && position;

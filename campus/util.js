@@ -23,6 +23,22 @@ export class NeedsRelay extends Error {
   constructor() { super('Bus relay not set up'); }
 }
 
+/**
+ * fetch() that gives up after `ms`. Without this, a server that never answers
+ * (e.g. VT's hours site during an outage) leaves the page blank for minutes.
+ */
+export async function fetchWithTimeout(url, init = {}, ms = 12000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } catch (err) {
+    throw new Error(err.name === 'AbortError' ? 'server not responding' : 'network error');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Fetch `url` through the relay. `form` (object) makes it a form POST. */
 export async function relayFetch(url, { form } = {}) {
   const relay = getRelay();
@@ -30,13 +46,13 @@ export async function relayFetch(url, { form } = {}) {
   const init = form
     ? { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form).toString() }
     : {};
-  const res = await fetch(`${relay}/?url=${encodeURIComponent(url)}`, { ...init, cache: 'no-store' });
+  const res = await fetchWithTimeout(`${relay}/?url=${encodeURIComponent(url)}`, { ...init, cache: 'no-store' }, 15000);
   if (!res.ok) throw new Error(`Relay error ${res.status}`);
   return res;
 }
 
 export async function getJSON(url, opts) {
-  const res = await fetch(url, { cache: 'no-store', ...opts });
+  const res = await fetchWithTimeout(url, { cache: 'no-store', ...opts });
   if (!res.ok) throw new Error(`Error ${res.status}`);
   return res.json();
 }

@@ -5,7 +5,7 @@
 // ONE bus: walk to a stop → wait → ride → walk to the destination. It also
 // reports how long walking the whole way would take.
 
-import { distanceM } from './util.js';
+import { distanceM } from './util.js?v=2';
 
 export const WALK_M_PER_MIN = 80;   // ≈ 3 mph
 export const DETOUR = 1.25;         // streets aren't straight lines

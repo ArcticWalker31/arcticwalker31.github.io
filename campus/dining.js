@@ -3,9 +3,38 @@
 // Source: VT's official hours feed (apps.students.vt.edu/hours), which
 // allows cross-site reads. It lists the venues open on a given day.
 
-import { getJSON, dateKey, atTime } from './util.js';
+import { getJSON, dateKey, atTime, store } from './util.js?v=2';
 
 const URL = 'https://apps.students.vt.edu/hours/Api/NonRestricted/UnitsOpenOnDay/Date/';
+const CACHE_KEY = 'diningCache'; // { 'YYYY-MM-DD': units[] }, a week ahead, so outages still show hours
+
+/** One day's venues from VT, falling back to the saved copy if VT's site is down. */
+async function fetchDay(day, stale) {
+  try {
+    const units = await getJSON(URL + day);
+    const cache = store.get(CACHE_KEY, {}); // re-read: prefetches save in parallel
+    cache[day] = units;
+    store.set(CACHE_KEY, Object.fromEntries(Object.entries(cache).sort().slice(-10)));
+    return units;
+  } catch (err) {
+    const saved = store.get(CACHE_KEY, {})[day];
+    if (saved) { stale.hit = true; return saved; }
+    throw err;
+  }
+}
+
+/** After a good load, quietly save the next 6 days too (skips days already saved). */
+let prefetched = '';
+function prefetchWeek(now) {
+  const today = dateKey(now);
+  if (prefetched === today) return;
+  prefetched = today;
+  const cache = store.get(CACHE_KEY, {});
+  for (let i = 1; i <= 6; i++) {
+    const day = dateKey(new Date(now.getTime() + i * 86400000));
+    if (!cache[day]) fetchDay(day, {}).catch(() => {});
+  }
+}
 
 function periods(day, unit) {
   return (unit.hours || [])
@@ -28,10 +57,12 @@ function periods(day, unit) {
 export async function getDining(now = new Date()) {
   const today = dateKey(now);
   const yesterday = dateKey(new Date(now.getTime() - 86400000));
+  const stale = { hit: false };
   const [todayUnits, yUnits] = await Promise.all([
-    getJSON(URL + today),
-    now.getHours() < 5 ? getJSON(URL + yesterday).catch(() => []) : Promise.resolve([]),
+    fetchDay(today, stale),
+    now.getHours() < 5 ? fetchDay(yesterday, {}).catch(() => []) : Promise.resolve([]),
   ]);
+  if (!stale.hit) prefetchWeek(now);
 
   const venues = new Map();
   const add = (unit, day) => {
@@ -51,7 +82,7 @@ export async function getDining(now = new Date()) {
   }
   for (const u of todayUnits) add(u, today);
 
-  return [...venues.values()].map((v) => {
+  const list = [...venues.values()].map((v) => {
     v.periods = v.periods.filter((p) => p.close > new Date(now.getTime() - 12 * 3600000)).sort((a, b) => a.open - b.open);
     const current = v.periods.find((p) => p.open <= now && now < p.close);
     const next = v.periods.find((p) => p.open > now);
@@ -59,6 +90,8 @@ export async function getDining(now = new Date()) {
     if (next) return { ...v, state: 'later', until: next.open, period: next };
     return { ...v, state: 'closed', until: null, period: null };
   });
+  list.stale = stale.hit; // true = VT's site is down, showing the saved copy
+  return list;
 }
 
 /** "Owens Hall - Dunkin'" → { building: 'Owens Hall', name: "Dunkin'" } */

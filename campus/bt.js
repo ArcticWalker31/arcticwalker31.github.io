@@ -4,7 +4,7 @@
 //   getRoutes, getRoutePatterns, getPatternPoints (POST patternName),
 //   getNextDeparturesForStop (POST stopCode, numOfTrips), getBuses.
 
-import { relayFetch, store } from './util.js';
+import { relayFetch, store } from './util.js?v=2';
 
 const BASE = 'https://ridebt.org/index.php?option=com_ajax&module=bt_map&format=json&Itemid=101&method=';
 // BT only lists the routes running TODAY, so stops/routes are re-read daily

@@ -5,7 +5,7 @@
 //   GetAllPlaces
 //   GetArrivalAndDepartureTimesForRoutes(routeShortNames, noOfTrips, serviceDate)
 
-import { relayFetch, store } from './util.js';
+import { relayFetch, store } from './util.js?v=2';
 
 const BASE = 'https://www.bt4uclassic.org/webservices/bt4u_webservice.asmx/';
 const PLACES_TTL = 30 * 24 * 3600 * 1000;

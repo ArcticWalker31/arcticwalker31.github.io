@@ -4,7 +4,7 @@
 //   parsed from its server-rendered cards.
 // Hours: VT's RecSports hours feed (via the relay; it blocks browsers).
 
-import { relayFetch, dateKey, atTime } from './util.js';
+import { relayFetch, dateKey, atTime } from './util.js?v=2';
 
 const OCCUPANCY_URL = 'https://connect.recsports.vt.edu/FacilityOccupancy';
 const HOURS_URL = 'https://apps.students.vt.edu/rshours/Api/NonRestricted/UnitsOpenOnDay/Date/';
